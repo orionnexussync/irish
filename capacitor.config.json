@@ -1,0 +1,9 @@
+{
+  "appId": "com.company.rfap.kiosk",
+  "appName": "IRISH 24/7",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
