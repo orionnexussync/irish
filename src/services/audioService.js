@@ -65,6 +65,28 @@ class AudioService {
     }
   }
 
+  notify(text, type = 'alert') {
+    if (!text) return;
+    const cleanText = String(text)
+      .replace(/<[^>]*>?/gm, '')
+      .replace(/[🚨✅🔄📋]/g, '')
+      .trim();
+
+    const lower = cleanText.toLowerCase();
+    const isError = type === 'error' || lower.includes('error') || lower.includes('denied') || lower.includes('required') || lower.includes('already checkin') || lower.includes('failed') || lower.includes('invalid');
+    const isSos = type === 'sos' || lower.includes('sos') || lower.includes('emergency');
+
+    if (isError) {
+      this.playBeep('error');
+    } else if (isSos) {
+      this.playBeep('sos');
+    } else {
+      this.playBeep('success');
+    }
+
+    this.speak(cleanText);
+  }
+
   playBeep(type = 'success') {
     try {
       const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
@@ -108,3 +130,18 @@ class AudioService {
 }
 
 export const audioService = new AudioService();
+
+// Global Interceptor: Trigger automatic audio voiceover for system window.alert calls
+if (typeof window !== 'undefined') {
+  const nativeAlert = window.alert;
+  window.alert = function (message) {
+    try {
+      if (message) {
+        audioService.notify(message);
+      }
+    } catch (e) {
+      console.warn('Audio alert voiceover error:', e);
+    }
+    return nativeAlert.apply(window, arguments);
+  };
+}

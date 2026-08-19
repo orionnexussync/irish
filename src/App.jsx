@@ -3,6 +3,7 @@ import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut } from 'lucide-r
 import { KioskApp } from './components/KioskApp';
 import { AdminPortal } from './components/AdminPortal';
 import { api } from './services/supabase';
+import { audioService } from './services/audioService';
 
 export function App() {
   // Platform Detection: Native Mobile APK (Capacitor) vs Web App Browser
@@ -38,8 +39,10 @@ export function App() {
       setShowCompanyModal(false);
       setCompanyCodeInput('');
       loadBranches();
+      audioService.notify(`Connected to ${active.company_name}`);
     } catch (err) {
       setCompanyCodeError(err.message);
+      audioService.notify(err.message, 'error');
     }
   };
 
@@ -81,8 +84,11 @@ export function App() {
       setIsAdminUnlocked(true);
       setShowPinModal(false);
       setViewMode('ADMIN');
+      audioService.notify('Admin Portal Unlocked');
     } else {
-      setPinError('Invalid Security Password. Please try again.');
+      const errMsg = 'Invalid Security Password. Please try again.';
+      setPinError(errMsg);
+      audioService.notify(errMsg, 'error');
     }
   };
 
