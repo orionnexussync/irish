@@ -696,27 +696,37 @@ export const api = {
 
     let updated;
     if (punch_type === 'CHECK_IN') {
-      // Find any open check-in session or existing check-in today for this employee
+      const shifts = api.getShifts();
       const openCheckIn = attendance.find(
-        a => a.emp_id === emp_id &&
-             a.date_stamp === dateStamp &&
-             a.check_in_time &&
-             !a.check_out_time
+        a => a.emp_id === emp_id && a.check_in_time && !a.check_out_time
       );
+
+      if (openCheckIn) {
+        const openShiftObj = shifts.find(s => Number(s.shift_id) === Number(openCheckIn.shift_id));
+        const openShiftNameStr = openShiftObj
+          ? `${openShiftObj.shift_name} [${openShiftObj.start_time} - ${openShiftObj.end_time}]`
+          : 'PREVIOUS SHIFT';
+
+        if (Number(openCheckIn.shift_id) === Number(shift_id || 1)) {
+          throw new Error(`YOU ALREADY CHECKIN SHIFT (${openShiftNameStr})`);
+        } else {
+          throw new Error(`ATTENDANCE REGULARIZATION IS REQUIRED FOR PREVIOUS SHIFT ${openShiftNameStr}.`);
+        }
+      }
+
       const sameShiftCheckIn = attendance.find(
         a => a.emp_id === emp_id &&
              a.date_stamp === dateStamp &&
              Number(a.shift_id) === Number(shift_id || 1) &&
              a.check_in_time
       );
-      const existingCheckIn = openCheckIn || sameShiftCheckIn;
 
-      if (existingCheckIn) {
-        const checkInDate = new Date(existingCheckIn.check_in_time);
-        const formattedTime = isNaN(checkInDate.getTime())
-          ? 'HH:MM'
-          : checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        throw new Error(`ALREADY CHECKED IN @ ${formattedTime}`);
+      if (sameShiftCheckIn) {
+        const targetShiftObj = shifts.find(s => Number(s.shift_id) === Number(shift_id || 1));
+        const targetShiftNameStr = targetShiftObj
+          ? `${targetShiftObj.shift_name} [${targetShiftObj.start_time} - ${targetShiftObj.end_time}]`
+          : 'SHIFT';
+        throw new Error(`YOU ALREADY CHECKIN SHIFT (${targetShiftNameStr})`);
       }
 
       const checkInIso = new Date(timestamp || Date.now()).toISOString();
