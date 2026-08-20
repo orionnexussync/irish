@@ -49,8 +49,9 @@ export const emailService = {
 
   /**
    * Send Email via Resend REST API (https://api.resend.com/emails)
+   * Supports file attachments (e.g. Base64 Excel spreadsheets)
    */
-  sendEmail: async ({ to, subject, html, text, from, apiKeyOverride }) => {
+  sendEmail: async ({ to, subject, html, text, from, attachments, apiKeyOverride }) => {
     const apiKey = apiKeyOverride || emailService.getApiKey();
     if (!apiKey) {
       throw new Error('Resend API Key is missing. System API key not found.');
@@ -70,6 +71,10 @@ export const emailService = {
       html: html || `<p>${text || 'System notification'}</p>`
     };
 
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      payload.attachments = attachments;
+    }
+
     try {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -87,7 +92,7 @@ export const emailService = {
         throw new Error(`Resend API Error (${response.status}): ${errorMsg}`);
       }
 
-      console.log('✅ Email successfully dispatched via Resend API:', resData);
+      console.log('✅ Email & Excel attachment successfully dispatched via Resend API:', resData);
       return { success: true, id: resData.id, data: resData };
     } catch (err) {
       console.error('Resend email dispatch error:', err);
@@ -112,6 +117,7 @@ export const emailService = {
             <li><strong>Timestamp:</strong> ${new Date().toLocaleString()}</li>
             <li><strong>Sender Domain:</strong> ${fromEmail || SYSTEM_DEFAULT_FROM_EMAIL}</li>
             <li><strong>Report Types Supported:</strong> Daily Attendance, Monthly General, Monthly Detailed</li>
+            <li><strong>Attachments Supported:</strong> Direct Excel (.xlsx) File Attachment</li>
             <li><strong>Status:</strong> Dispatched & Verified</li>
           </ul>
           <p style="font-size: 12px; color: #94a3b8; margin-top: 20px;">Orion Nexus Sync - Enterprise Automated Notification Service</p>
@@ -121,13 +127,17 @@ export const emailService = {
   },
 
   /**
-   * Send Daily Attendance Summary Report via Email
+   * Send Daily Attendance Summary Report via Email with attached Excel File
    */
-  sendDailyReportEmail: async (recipients, reportDate, summaryStats) => {
+  sendDailyReportEmail: async (recipients, reportDate, summaryStats, attachments = []) => {
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 16px; max-width: 640px;">
         <h2 style="color: #38bdf8; margin: 0 0 10px 0;">📊 Daily Attendance Summary Report</h2>
         <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">Report Date: <strong>${reportDate}</strong></p>
+
+        <div style="background: #1e293b; padding: 14px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 20px; font-size: 14px; color: #e2e8f0;">
+          📎 <strong>Excel File Attached:</strong> The complete <strong>Daily Attendance Log (.xlsx)</strong> is attached directly to this email.
+        </div>
 
         <table style="width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
           <thead>
@@ -156,21 +166,22 @@ export const emailService = {
           </tbody>
         </table>
 
-        <p style="font-size: 13px; color: #94a3b8;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view or download full Excel report spreadsheets.</p>
+        <p style="font-size: 13px; color: #94a3b8;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view real-time logs.</p>
       </div>
     `;
 
     return await emailService.sendEmail({
       to: recipients,
-      subject: `📊 Daily Attendance Report - ${reportDate}`,
-      html: htmlContent
+      subject: `📊 Daily Attendance Report (${reportDate}) [Excel Attached]`,
+      html: htmlContent,
+      attachments
     });
   },
 
   /**
-   * Send Monthly General Report via Email
+   * Send Monthly General Report via Email with attached Excel File
    */
-  sendMonthlyGeneralReportEmail: async (recipients, monthLabel, totalEmployees) => {
+  sendMonthlyGeneralReportEmail: async (recipients, monthLabel, totalEmployees, attachments = []) => {
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 16px; max-width: 640px;">
         <h2 style="color: #0284c7; margin: 0 0 10px 0;">📊 Monthly General Attendance Register</h2>
@@ -178,7 +189,7 @@ export const emailService = {
 
         <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #0284c7; margin-bottom: 20px;">
           <p style="margin: 0; font-size: 14px; color: #cbd5e1;">
-            The <strong>Monthly General Attendance Register</strong> for <strong>${monthLabel}</strong> has been generated and is ready for download in your System Admin Portal.
+            📎 <strong>Excel File Attached:</strong> The complete <strong>Monthly General Attendance Register (.xlsx)</strong> for <strong>${monthLabel}</strong> is attached to this email.
           </p>
         </div>
 
@@ -187,21 +198,22 @@ export const emailService = {
           <li>Includes Present Days, Leave Days, Holidays, Weekly Offs, and Monthly Total counts per employee.</li>
         </ul>
 
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 20px;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view or download full Excel report spreadsheets.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 20px;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view real-time logs.</p>
       </div>
     `;
 
     return await emailService.sendEmail({
       to: recipients,
-      subject: `📊 Monthly General Attendance Report - ${monthLabel}`,
-      html: htmlContent
+      subject: `📊 Monthly General Attendance Report (${monthLabel}) [Excel Attached]`,
+      html: htmlContent,
+      attachments
     });
   },
 
   /**
-   * Send Monthly Detailed Report (IN/OUT/Hrs/OT) via Email
+   * Send Monthly Detailed Report (IN/OUT/Hrs/OT) via Email with attached Excel File
    */
-  sendMonthlyDetailedReportEmail: async (recipients, monthLabel, totalEmployees) => {
+  sendMonthlyDetailedReportEmail: async (recipients, monthLabel, totalEmployees, attachments = []) => {
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 16px; max-width: 640px;">
         <h2 style="color: #059669; margin: 0 0 10px 0;">📋 Monthly Detailed Attendance Report (IN/OUT/Hrs/OT)</h2>
@@ -209,7 +221,7 @@ export const emailService = {
 
         <div style="background: #1e293b; padding: 16px; border-radius: 8px; border-left: 4px solid #059669; margin-bottom: 20px;">
           <p style="margin: 0; font-size: 14px; color: #cbd5e1;">
-            The <strong>Monthly Detailed Attendance Report</strong> for <strong>${monthLabel}</strong> has been generated and dispatched.
+            📎 <strong>Excel File Attached:</strong> The complete 5-subrow <strong>Monthly Detailed Report (.xlsx)</strong> for <strong>${monthLabel}</strong> is attached to this email.
           </p>
         </div>
 
@@ -218,14 +230,15 @@ export const emailService = {
           <li>Formatted for HR payroll, overtime verification, and audit calculations.</li>
         </ul>
 
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 20px;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view or download full Excel report spreadsheets.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 20px;">Log into your Orion System Admin Portal at <a href="https://irish.orionnexussync.com" style="color: #38bdf8;">irish.orionnexussync.com</a> to view real-time logs.</p>
       </div>
     `;
 
     return await emailService.sendEmail({
       to: recipients,
-      subject: `📋 Monthly Detailed Attendance Report - ${monthLabel}`,
-      html: htmlContent
+      subject: `📋 Monthly Detailed Attendance Report (${monthLabel}) [Excel Attached]`,
+      html: htmlContent,
+      attachments
     });
   }
 };
