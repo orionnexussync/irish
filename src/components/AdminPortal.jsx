@@ -2212,106 +2212,59 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
           </div>
         )}
 
-        {/* TAB 10: EMAIL SCHEDULES & RESEND API CONFIGURATION */}
+        {/* TAB 10: AUTOMATED EMAIL REPORT DISPATCHES */}
         {activeTab === 'EMAIL_SCHEDULES' && (
           <div className="tab-content">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
               <div>
-                <h2>Automated Email Reports & Resend API Integration</h2>
-                <p className="tab-subtitle">Configure Resend API keys, sender email domains, and automated report dispatches.</p>
+                <h2>Automated Email Report Dispatches</h2>
+                <p className="tab-subtitle">Configure recipient emails and select report types for automated background dispatch.</p>
               </div>
-              <a
-                href="https://resend.com"
-                target="_blank"
-                rel="noreferrer"
-                style={{ padding: '6px 14px', background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                🌐 Get Free Resend API Key (resend.com)
-              </a>
-            </div>
-
-            {/* RESEND API KEY CONFIGURATION BOX */}
-            <div className="form-card" style={{ marginBottom: 24, border: '1px solid #0284c7' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <Mail size={20} style={{ color: '#38bdf8' }} />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>1. Resend API Credentials Setup</h3>
+              <div style={{ padding: '6px 14px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700 }}>
+                ⚡ Resend Email Engine Active
               </div>
-
-              <form onSubmit={handleSaveResendConfig} className="grid-form">
-                <div className="form-group full-width">
-                  <label>Resend API Key * (e.g. re_123456789...)</label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx"
-                    value={resendApiKey}
-                    onChange={e => setResendApiKey(e.target.value)}
-                    style={{ fontFamily: 'monospace', fontWeight: 700, background: '#0f172a', color: '#38bdf8' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
-                    Create your API key at <strong>resend.com &gt; API Keys</strong>. Free tier includes 3,000 emails/month!
-                  </span>
-                </div>
-
-                <div className="form-group">
-                  <label>Sender Email (From) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Orion Enterprise <onboarding@resend.dev>"
-                    value={resendFromEmail}
-                    onChange={e => setResendFromEmail(e.target.value)}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
-                    Use <code>onboarding@resend.dev</code> for testing or your custom domain email.
-                  </span>
-                </div>
-
-                <div className="form-group">
-                  <label>Test Recipient Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="your-email@company.com"
-                    value={testRecipientEmail}
-                    onChange={e => setTestRecipientEmail(e.target.value)}
-                  />
-                </div>
-
-                {resendStatusMsg && (
-                  <div className="form-group full-width" style={{ padding: 12, borderRadius: 8, background: resendStatusMsg.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: resendStatusMsg.success ? '#34d399' : '#f87171', border: resendStatusMsg.success ? '1px solid #10b981' : '1px solid #ef4444', fontWeight: 600, fontSize: '0.85rem' }}>
-                    {resendStatusMsg.text}
-                  </div>
-                )}
-
-                <div className="form-group full-width" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>
-                    💾 Save Resend API Config
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleTestResendEmail}
-                    disabled={isTestingResend}
-                    style={{ padding: '10px 18px', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    {isTestingResend ? 'Sending Test Email...' : '🧪 Send Live Test Email via Resend'}
-                  </button>
-                </div>
-              </form>
             </div>
 
             {/* AUTOMATED REPORT DISPATCH SCHEDULE FORM */}
             <div className="form-card">
-              <h3 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', fontWeight: 800 }}>2. Automated Report Email Schedule</h3>
+              <h3 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', fontWeight: 800 }}>Schedule Automated Report Email</h3>
               <form onSubmit={handleEmailScheduleSubmit} className="grid-form">
                 <div className="form-group">
                   <label>Config Name *</label>
-                  <input type="text" required value={emailForm.config_name} onChange={e => setEmailForm({ ...emailForm, config_name: e.target.value })} />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Executive Daily & Monthly Summary Report"
+                    value={emailForm.config_name}
+                    onChange={e => setEmailForm({ ...emailForm, config_name: e.target.value })}
+                  />
                 </div>
+
                 <div className="form-group">
-                  <label>Recipient Emails (Comma separated) *</label>
-                  <input type="text" required value={emailForm.recipient_emails} onChange={e => setEmailForm({ ...emailForm, recipient_emails: e.target.value })} />
+                  <label>Recipient Email Addresses (Comma separated) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. manager@company.com, hr@company.com"
+                    value={emailForm.recipient_emails}
+                    onChange={e => setEmailForm({ ...emailForm, recipient_emails: e.target.value })}
+                  />
                 </div>
+
+                <div className="form-group">
+                  <label>Report Type Needed *</label>
+                  <select
+                    value={emailForm.report_type}
+                    onChange={e => setEmailForm({ ...emailForm, report_type: e.target.value })}
+                  >
+                    <option value="DAILY_ATTENDANCE">📊 Daily Attendance Report</option>
+                    <option value="MONTHLY_GENERAL">📈 Monthly General Report</option>
+                    <option value="MONTHLY_DETAILED">📋 Monthly Detailed Report (IN/OUT/Hrs/OT)</option>
+                    <option value="SOS_ALERTS">🚨 SOS Panic Emergency Alerts</option>
+                    <option value="PETTY_CASH">💵 Petty Cash Expenses Summary</option>
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label>Dispatch Frequency</label>
                   <select value={emailForm.dispatch_frequency} onChange={e => setEmailForm({ ...emailForm, dispatch_frequency: e.target.value })}>
@@ -2320,31 +2273,54 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                     <option value="Monthly">Monthly</option>
                   </select>
                 </div>
+
                 <div className="form-group">
                   <label>Dispatch Time</label>
-                  <input type="text" value={emailForm.dispatch_time} onChange={e => setEmailForm({ ...emailForm, dispatch_time: e.target.value })} />
+                  <input type="text" placeholder="e.g. 07:00 PM" value={emailForm.dispatch_time} onChange={e => setEmailForm({ ...emailForm, dispatch_time: e.target.value })} />
                 </div>
+
                 <div className="form-group full-width" style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>Save Schedule Config</button>
+                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>
+                    💾 Save Email Schedule
+                  </button>
                   <button
                     type="button"
                     onClick={async () => {
                       try {
+                        const recipients = emailForm.recipient_emails;
+                        if (!recipients) {
+                          alert('Please enter recipient email address.');
+                          return;
+                        }
+
                         const todayStr = new Date().toISOString().split('T')[0];
-                        await emailService.sendAttendanceReportEmail(emailForm.recipient_emails, todayStr, {
-                          totalStaff: employees.length,
-                          presentCount: attendanceLogs.filter(a => a.date_stamp === todayStr).length,
-                          absentCount: employees.length - attendanceLogs.filter(a => a.date_stamp === todayStr).length,
-                          leaveCount: leaves.filter(l => l.start_date <= todayStr && l.end_date >= todayStr).length
-                        });
-                        alert(`✅ Daily Attendance Report Email sent via Resend to ${emailForm.recipient_emails}!`);
+                        const monthStr = new Date().toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+
+                        if (emailForm.report_type === 'DAILY_ATTENDANCE') {
+                          await emailService.sendDailyReportEmail(recipients, todayStr, {
+                            totalStaff: employees.length,
+                            presentCount: attendanceLogs.filter(a => a.date_stamp === todayStr).length,
+                            absentCount: employees.length - attendanceLogs.filter(a => a.date_stamp === todayStr).length,
+                            leaveCount: leaves.filter(l => l.start_date <= todayStr && l.end_date >= todayStr).length
+                          });
+                          alert(`✅ Daily Attendance Report Email sent via Resend to ${recipients}!`);
+                        } else if (emailForm.report_type === 'MONTHLY_GENERAL') {
+                          await emailService.sendMonthlyGeneralReportEmail(recipients, monthStr, employees.length);
+                          alert(`✅ Monthly General Report Email sent via Resend to ${recipients}!`);
+                        } else if (emailForm.report_type === 'MONTHLY_DETAILED') {
+                          await emailService.sendMonthlyDetailedReportEmail(recipients, monthStr, employees.length);
+                          alert(`✅ Monthly Detailed Report Email sent via Resend to ${recipients}!`);
+                        } else {
+                          await emailService.sendTestEmail(recipients, emailService.getFromEmail());
+                          alert(`✅ System Email Notification sent via Resend to ${recipients}!`);
+                        }
                       } catch (err) {
-                        alert(`❌ Report email failed: ${err.message}`);
+                        alert(`❌ Email dispatch failed: ${err.message}`);
                       }
                     }}
-                    style={{ padding: '10px 18px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ padding: '10px 18px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                   >
-                    📧 Send Report Email Now
+                    📧 Send Selected Report Email Now
                   </button>
                 </div>
               </form>
