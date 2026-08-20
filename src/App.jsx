@@ -266,7 +266,7 @@ export function App() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="header-controls-group">
           {/* Background Theme Customizer Button */}
           <button
             onClick={() => setShowThemeModal(true)}

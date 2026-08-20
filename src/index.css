@@ -101,62 +101,80 @@ html, body {
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
 }
 
 .brand-sub {
   font-size: 0.62rem;
   font-weight: 700;
-  color: #38bdf8;
+  color: #0284c7;
   letter-spacing: 0.12em;
 }
 
 .nav-mode-switcher {
   display: flex;
+  align-items: center;
   background: var(--app-card-bg, #121215);
-  padding: 3px;
-  border-radius: var(--radius-pill);
+  padding: 4px;
+  border-radius: 12px;
   border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-mode-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--text-gray);
+  color: var(--text-gray, #94a3b8);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
 .nav-mode-btn.active {
-  background: #ffffff;
-  color: #000000;
+  background: #0284c7;
+  color: #ffffff;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.header-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .branch-select-pill {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 6px 12px;
   background: var(--app-card-bg, #121215);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  color: #38bdf8;
+  border-radius: 8px;
+  color: #0284c7;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .branch-select-pill select {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -166,7 +184,7 @@ html, body {
 
 .branch-select-pill select option {
   background: var(--app-surface-bg, #121215);
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
 }
 
 /* =============================================================================
@@ -335,13 +353,13 @@ html, body {
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
 }
 
 .kiosk-date {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #38bdf8;
+  color: #0284c7;
   margin-top: 0.4rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1223,4 +1241,51 @@ html, body {
   color: #38bdf8;
   letter-spacing: 1px;
   font-weight: 600;
+}
+
+/* =============================================================================
+   MOBILE APK RESPONSIVE LAYOUT & ALIGNMENT ENHANCEMENTS
+   ============================================================================= */
+@media (max-width: 768px) {
+  .top-navbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.6rem 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .nav-mode-switcher {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .nav-mode-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  .header-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .branch-select-pill {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  .kiosk-time {
+    font-size: 2.75rem !important;
+  }
 }
