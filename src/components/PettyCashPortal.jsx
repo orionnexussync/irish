@@ -348,6 +348,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
     alert('✅ Approval Matrix rule saved!');
   };
 
+  const handleClearPettyCash = async () => {
+    if (window.confirm('Are you sure you want to clear ALL petty cash claims, history, and ledger logs?')) {
+      await api.clearPettyCashData();
+      loadPettyCashData();
+      alert('🎉 All sample petty cash claims and logs cleared successfully!');
+    }
+  };
+
   // Filter Claims for Pending Approver Queue
   const pendingApprovalsList = claims.filter(c => {
     if (userRole === 'APPROVER_L1') {
@@ -1063,6 +1071,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                   style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'PROJECTS' ? '#d97706' : '#334155', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   Projects
+                </button>
+                <button
+                  onClick={handleClearPettyCash}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                >
+                  🗑️ Clear Petty Cash Data
                 </button>
               </div>
             </div>

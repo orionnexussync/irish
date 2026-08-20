@@ -114,30 +114,12 @@ const initialSeed = {
     { category_code: 'C005', category_name: 'Material Purchase', is_enabled: true },
     { category_code: 'C006', category_name: 'Office Supplies', is_enabled: true }
   ],
-  petty_cash_claims: [
-    { claim_no: 'EMP10421908261015', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C001', expense_date: '2026-08-19', invoice_no: 'INV-1001', amount: 1200.00, reasons: 'Mobile monthly plan reimbursement', attachment_path: 'bill_mobile.pdf', current_status: 'Approved', created_at: '2026-08-19 10:15:00' },
-    { claim_no: 'EMP10421908261130', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C004', expense_date: '2026-08-19', invoice_no: 'INV-882910', amount: 8000.00, reasons: 'Client site visit transportation charges', attachment_path: 'receipt_travel.pdf', current_status: 'In-Progress', created_at: '2026-08-19 11:30:00' },
-    { claim_no: 'EMP10421908261420', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C005', expense_date: '2026-08-19', invoice_no: 'INV-1002', amount: 3500.00, reasons: 'Material Purchase for project site', attachment_path: 'invoice_material.pdf', current_status: 'Send Back', created_at: '2026-08-19 14:20:00' },
-    { claim_no: 'EMP10421908261600', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C003', expense_date: '2026-08-19', invoice_no: 'INV-1003', amount: 2100.00, reasons: 'On-site team food expense', attachment_path: 'bill_food.jpg', current_status: 'Pending', created_at: '2026-08-19 16:00:00' },
-    { claim_no: 'EMP10421908261745', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C006', expense_date: '2026-08-19', invoice_no: 'INV-1004', amount: 6000.00, reasons: 'Office supplies & printer cartridges', attachment_path: 'receipt_office.pdf', current_status: 'Rejected', created_at: '2026-08-19 17:45:00' }
-  ],
-  petty_cash_history: [
-    { history_id: 1, claim_no: 'EMP10421908261130', approver_id: 'EMP-1042', approver_name: 'Sarah Connor', approval_level: 'Level 0', action_taken: 'Initiated', remarks: 'Claim Submitted', action_timestamp: '19/08/2026 10:15' },
-    { history_id: 2, claim_no: 'EMP10421908261130', approver_id: 'EMP-2001', approver_name: 'Alex Mercer', approval_level: 'Level 1', action_taken: 'Approve', remarks: 'Verified Level 1', action_timestamp: '19/08/2026 11:30' },
-    { history_id: 3, claim_no: 'EMP10421908261420', approver_id: 'EMP-3005', approver_name: 'James Vance', approval_level: 'Level 2', action_taken: 'Send Back', remarks: 'Original tax invoice missing. Please re-attach.', action_timestamp: '19/08/2026 14:00' }
-  ],
+  petty_cash_claims: [],
+  petty_cash_history: [],
   petty_cash_matrix: [
     { matrix_id: 1, project_scope: 'ALL', amount_constraint: 'GREATER_THAN', threshold_value: 5000, target_approver: 'Approver_L2' }
   ],
-  petty_cash_ledger: [
-    { ledger_id: 1, project_id: 2, branch_id: 1, year: 2026, month: 'April', monthly_limit: 50000, opening_balance: 50000, spend: 30000, claim_raised: 0, ending_balance: 20000 },
-    { ledger_id: 2, project_id: 2, branch_id: 1, year: 2026, month: 'May', monthly_limit: 50000, opening_balance: 70000, spend: 60000, claim_raised: 0, ending_balance: 10000 },
-    { ledger_id: 3, project_id: 2, branch_id: 1, year: 2026, month: 'June', monthly_limit: 50000, opening_balance: 60000, spend: 65000, claim_raised: 0, ending_balance: -5000 },
-    { ledger_id: 4, project_id: 2, branch_id: 1, year: 2026, month: 'July', monthly_limit: 50000, opening_balance: 45000, spend: 45000, claim_raised: 0, ending_balance: 0 },
-    { ledger_id: 5, project_id: 2, branch_id: 1, year: 2026, month: 'August', monthly_limit: 50000, opening_balance: 50000, spend: 40000, claim_raised: 0, ending_balance: 10000 },
-    { ledger_id: 6, project_id: 2, branch_id: 1, year: 2026, month: 'September', monthly_limit: 50000, opening_balance: 60000, spend: 0, claim_raised: 0, ending_balance: 60000 },
-    { ledger_id: 7, project_id: 2, branch_id: 1, year: 2026, month: 'October', monthly_limit: 60000, opening_balance: 120000, spend: 0, claim_raised: 0, ending_balance: 120000 }
-  ]
+  petty_cash_ledger: []
 };
 
 function getLocalData(key, defaultVal) {
@@ -1207,6 +1189,18 @@ export const api = {
 
   getPettyCashLedger: () => getLocalData(STORAGE_KEYS.PETTY_CASH_LEDGER, initialSeed.petty_cash_ledger),
 
+  clearPettyCashData: async () => {
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, []);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, []);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_LEDGER, []);
+
+    if (isSupabaseConfigured()) {
+      await supabase.from('tbl_claim_approval_history').delete().neq('history_id', -999);
+      await supabase.from('tbl_petty_cash_claims').delete().neq('claim_no', '___NON_EXISTENT___');
+      await supabase.from('tbl_account_ledger').delete().neq('ledger_id', -999);
+    }
+  },
+
   // Clear All Employee & Attendance Data
   clearAllDatabaseData: async () => {
     setLocalData(STORAGE_KEYS.EMPLOYEES, []);
@@ -1214,6 +1208,9 @@ export const api = {
     setLocalData(STORAGE_KEYS.LEAVES, []);
     setLocalData(STORAGE_KEYS.REGULARIZATION, []);
     setLocalData(STORAGE_KEYS.SOS_LOGS, []);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, []);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, []);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_LEDGER, []);
 
     if (isSupabaseConfigured()) {
       await supabase.from('tbl_attendance_logs').delete().neq('emp_id', '___NON_EXISTENT___');
@@ -1221,6 +1218,9 @@ export const api = {
       await supabase.from('tbl_leave_entries').delete().neq('emp_id', '___NON_EXISTENT___');
       await supabase.from('tbl_sos_events').delete().neq('branch_id', -999);
       await supabase.from('tbl_employees').delete().neq('emp_id', '___NON_EXISTENT___');
+      await supabase.from('tbl_claim_approval_history').delete().neq('history_id', -999);
+      await supabase.from('tbl_petty_cash_claims').delete().neq('claim_no', '___NON_EXISTENT___');
+      await supabase.from('tbl_account_ledger').delete().neq('ledger_id', -999);
     }
   }
 };
