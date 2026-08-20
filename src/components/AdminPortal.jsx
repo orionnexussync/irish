@@ -300,9 +300,27 @@ CREATE POLICY "Allow anon full access to tbl_holidays" ON tbl_holidays FOR ALL U
 ALTER TABLE tbl_sos_events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow anon full access to tbl_sos_events" ON tbl_sos_events;
 CREATE POLICY "Allow anon full access to tbl_sos_events" ON tbl_sos_events FOR ALL USING (true) WITH CHECK (true);
+
+-- PETTY CASH ENTERPRISE MODULE TABLES
+CREATE TABLE IF NOT EXISTS tbl_petty_cash_projects (project_id BIGINT PRIMARY KEY, project_name VARCHAR(100) NOT NULL, branch_id INT REFERENCES tbl_branches(branch_id), is_active BOOLEAN DEFAULT TRUE);
+CREATE TABLE IF NOT EXISTS tbl_petty_cash_categories (category_code VARCHAR(20) PRIMARY KEY, category_name VARCHAR(100) NOT NULL, is_enabled BOOLEAN DEFAULT TRUE);
+CREATE TABLE IF NOT EXISTS tbl_petty_cash_claims (claim_no VARCHAR(50) PRIMARY KEY, emp_id VARCHAR(50) NOT NULL, project_id BIGINT REFERENCES tbl_petty_cash_projects(project_id), branch_id INT REFERENCES tbl_branches(branch_id), category_code VARCHAR(20) REFERENCES tbl_petty_cash_categories(category_code), expense_date DATE NOT NULL, invoice_no VARCHAR(100) NOT NULL, amount DECIMAL(12,2) NOT NULL, reasons TEXT NOT NULL, attachment_path TEXT, current_status VARCHAR(30) NOT NULL DEFAULT 'Pending', created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS tbl_claim_approval_history (history_id BIGINT PRIMARY KEY, claim_no VARCHAR(50) REFERENCES tbl_petty_cash_claims(claim_no) ON DELETE CASCADE, approver_id VARCHAR(50) NOT NULL, approver_name VARCHAR(100), approval_level VARCHAR(20) NOT NULL, action_taken VARCHAR(30) NOT NULL, remarks TEXT, action_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS tbl_account_ledger (ledger_id BIGINT PRIMARY KEY, project_id BIGINT REFERENCES tbl_petty_cash_projects(project_id), branch_id INT REFERENCES tbl_branches(branch_id), year INT NOT NULL, month VARCHAR(20) NOT NULL, monthly_limit DECIMAL(12,2) NOT NULL, opening_balance DECIMAL(12,2) NOT NULL, spend DECIMAL(12,2) DEFAULT 0.00, claim_raised DECIMAL(12,2) DEFAULT 0.00, ending_balance DECIMAL(12,2) NOT NULL);
+
+ALTER TABLE tbl_petty_cash_projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon full access to tbl_petty_cash_projects" ON tbl_petty_cash_projects FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE tbl_petty_cash_categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon full access to tbl_petty_cash_categories" ON tbl_petty_cash_categories FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE tbl_petty_cash_claims ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon full access to tbl_petty_cash_claims" ON tbl_petty_cash_claims FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE tbl_claim_approval_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon full access to tbl_claim_approval_history" ON tbl_claim_approval_history FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE tbl_account_ledger ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledger FOR ALL USING (true) WITH CHECK (true);
 `;
     navigator.clipboard.writeText(sqlText);
-    alert('📋 1-Click Supabase DDL SQL Schema script with RLS ENABLED copied to clipboard!');
+    alert('📋 1-Click Supabase DDL SQL Schema script (including Petty Cash tables) with RLS ENABLED copied to clipboard!');
   };
 
   // Helper to calculate leave duration days automatically
