@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { api } from '../services/supabase';
 import { PettyCashPortal } from './PettyCashPortal';
+import { emailService } from '../services/emailService';
 
 export function AdminPortal({ selectedBranchId, onLockAdmin, onBranchesUpdated, onCompanyLogout }) {
   // Admin Tabs: 'DASHBOARD' | 'REPORTS' | 'ONBOARDING' | 'DIRECTORY' | 'LEAVES' | 'REGULARIZATION' | 'SHIFTS' | 'HOLIDAYS' | 'LOCATIONS' | 'EMAIL_SCHEDULES' | 'BIRTHDAYS' | 'SOS_LOGS' | 'COMPANIES'
@@ -103,6 +104,46 @@ export function AdminPortal({ selectedBranchId, onLockAdmin, onBranchesUpdated, 
     target_branch_id: 1, report_type: 'DAILY_ATTENDANCE', export_format: 'XLSX',
     dispatch_frequency: 'Daily', dispatch_time: '07:00 PM', is_active: true
   });
+
+  // Resend Email API Integration States
+  const [resendApiKey, setResendApiKey] = useState(() => emailService.getApiKey());
+  const [resendFromEmail, setResendFromEmail] = useState(() => emailService.getFromEmail());
+  const [testRecipientEmail, setTestRecipientEmail] = useState('manager@company.com');
+  const [isTestingResend, setIsTestingResend] = useState(false);
+  const [resendStatusMsg, setResendStatusMsg] = useState(null);
+
+  const handleSaveResendConfig = (e) => {
+    e.preventDefault();
+    emailService.saveApiKey(resendApiKey);
+    emailService.saveFromEmail(resendFromEmail);
+    setResendStatusMsg({ success: true, text: '✅ Resend API configuration saved successfully!' });
+    alert('✅ Resend Email API Key & Sender Email saved successfully!');
+  };
+
+  const handleTestResendEmail = async () => {
+    if (!resendApiKey) {
+      alert('Please enter your Resend API Key (re_...) first.');
+      return;
+    }
+    if (!testRecipientEmail) {
+      alert('Please enter a recipient email address for testing.');
+      return;
+    }
+
+    setIsTestingResend(true);
+    setResendStatusMsg({ success: true, text: 'Sending test email via Resend API...' });
+
+    try {
+      const res = await emailService.sendTestEmail(testRecipientEmail, resendApiKey, resendFromEmail);
+      setResendStatusMsg({ success: true, text: `✅ Test email sent via Resend API! ID: ${res.id}` });
+      alert(`✅ TEST EMAIL DISPATCHED VIA RESEND!\n\nRecipient: ${testRecipientEmail}\nResend Email ID: ${res.id}`);
+    } catch (err) {
+      setResendStatusMsg({ success: false, text: `❌ Resend API Error: ${err.message}` });
+      alert(`❌ Resend Email Failed: ${err.message}`);
+    } finally {
+      setIsTestingResend(false);
+    }
+  };
 
   useEffect(() => {
     loadAllData();
@@ -2171,11 +2212,97 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
           </div>
         )}
 
-        {/* TAB 10: EMAIL SCHEDULES */}
+        {/* TAB 10: EMAIL SCHEDULES & RESEND API CONFIGURATION */}
         {activeTab === 'EMAIL_SCHEDULES' && (
           <div className="tab-content">
-            <h2>Automated Email Report Dispatches</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+              <div>
+                <h2>Automated Email Reports & Resend API Integration</h2>
+                <p className="tab-subtitle">Configure Resend API keys, sender email domains, and automated report dispatches.</p>
+              </div>
+              <a
+                href="https://resend.com"
+                target="_blank"
+                rel="noreferrer"
+                style={{ padding: '6px 14px', background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', border: '1px solid #0284c7', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                🌐 Get Free Resend API Key (resend.com)
+              </a>
+            </div>
+
+            {/* RESEND API KEY CONFIGURATION BOX */}
+            <div className="form-card" style={{ marginBottom: 24, border: '1px solid #0284c7' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Mail size={20} style={{ color: '#38bdf8' }} />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>1. Resend API Credentials Setup</h3>
+              </div>
+
+              <form onSubmit={handleSaveResendConfig} className="grid-form">
+                <div className="form-group full-width">
+                  <label>Resend API Key * (e.g. re_123456789...)</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={resendApiKey}
+                    onChange={e => setResendApiKey(e.target.value)}
+                    style={{ fontFamily: 'monospace', fontWeight: 700, background: '#0f172a', color: '#38bdf8' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
+                    Create your API key at <strong>resend.com &gt; API Keys</strong>. Free tier includes 3,000 emails/month!
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label>Sender Email (From) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Orion Enterprise <onboarding@resend.dev>"
+                    value={resendFromEmail}
+                    onChange={e => setResendFromEmail(e.target.value)}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
+                    Use <code>onboarding@resend.dev</code> for testing or your custom domain email.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label>Test Recipient Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="your-email@company.com"
+                    value={testRecipientEmail}
+                    onChange={e => setTestRecipientEmail(e.target.value)}
+                  />
+                </div>
+
+                {resendStatusMsg && (
+                  <div className="form-group full-width" style={{ padding: 12, borderRadius: 8, background: resendStatusMsg.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: resendStatusMsg.success ? '#34d399' : '#f87171', border: resendStatusMsg.success ? '1px solid #10b981' : '1px solid #ef4444', fontWeight: 600, fontSize: '0.85rem' }}>
+                    {resendStatusMsg.text}
+                  </div>
+                )}
+
+                <div className="form-group full-width" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>
+                    💾 Save Resend API Config
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTestResendEmail}
+                    disabled={isTestingResend}
+                    style={{ padding: '10px 18px', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {isTestingResend ? 'Sending Test Email...' : '🧪 Send Live Test Email via Resend'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* AUTOMATED REPORT DISPATCH SCHEDULE FORM */}
             <div className="form-card">
+              <h3 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', fontWeight: 800 }}>2. Automated Report Email Schedule</h3>
               <form onSubmit={handleEmailScheduleSubmit} className="grid-form">
                 <div className="form-group">
                   <label>Config Name *</label>
@@ -2197,8 +2324,28 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                   <label>Dispatch Time</label>
                   <input type="text" value={emailForm.dispatch_time} onChange={e => setEmailForm({ ...emailForm, dispatch_time: e.target.value })} />
                 </div>
-                <div className="form-group full-width" style={{ marginTop: 12 }}>
-                  <button type="submit" className="submit-btn">Save Email Config</button>
+                <div className="form-group full-width" style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>Save Schedule Config</button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        await emailService.sendAttendanceReportEmail(emailForm.recipient_emails, todayStr, {
+                          totalStaff: employees.length,
+                          presentCount: attendanceLogs.filter(a => a.date_stamp === todayStr).length,
+                          absentCount: employees.length - attendanceLogs.filter(a => a.date_stamp === todayStr).length,
+                          leaveCount: leaves.filter(l => l.start_date <= todayStr && l.end_date >= todayStr).length
+                        });
+                        alert(`✅ Daily Attendance Report Email sent via Resend to ${emailForm.recipient_emails}!`);
+                      } catch (err) {
+                        alert(`❌ Report email failed: ${err.message}`);
+                      }
+                    }}
+                    style={{ padding: '10px 18px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    📧 Send Report Email Now
+                  </button>
                 </div>
               </form>
             </div>
