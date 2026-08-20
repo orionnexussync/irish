@@ -262,7 +262,7 @@ export function App() {
             className={`nav-mode-btn ${viewMode === 'PETTY_CASH' ? 'active' : ''}`}
             onClick={() => setViewMode('PETTY_CASH')}
           >
-            <DollarSign size={18} style={{ color: '#10b981' }} /> Petty Cash Portal
+            <DollarSign size={18} style={{ color: '#10b981' }} /> {isNativeMobile ? 'Petty Cash Initiator' : 'Petty Cash Approver'}
           </button>
         </div>
 
@@ -320,6 +320,7 @@ export function App() {
         />
       ) : viewMode === 'PETTY_CASH' ? (
         <PettyCashPortal
+          platformMode={isNativeMobile ? 'MOBILE_INITIATOR' : 'WEB_APPROVER'}
           selectedBranchId={selectedBranchId}
           onBackToAdmin={() => setViewMode('ADMIN')}
         />

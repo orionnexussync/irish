@@ -1,14 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   DollarSign, FileText, Plus, CheckCircle2, XCircle, AlertCircle, RotateCcw, Clock, Eye,
-  Building, Filter, Download, ArrowLeft, Upload, Camera, Shield, Check, X, Layers, Settings, ChevronRight
+  Building, Filter, Download, ArrowLeft, Upload, Camera, Shield, Check, X, Layers, Settings, ChevronRight, UserCheck, Lock, RefreshCw
 } from 'lucide-react';
 import { api } from '../services/supabase';
 import { audioService } from '../services/audioService';
+import { detectFaceInVideo, extractFaceVectorFromVideo, matchFaceEmbedding } from '../services/faceEngine';
 
-export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
+export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode = 'ALL' }) {
+  // Determine Platform Isolation: 'MOBILE_INITIATOR' vs 'WEB_APPROVER' vs 'ALL'
+  const isNativeMobile = !!(
+    window.Capacitor &&
+    typeof window.Capacitor.isNativePlatform === 'function' &&
+    window.Capacitor.isNativePlatform()
+  );
+
+  const activePlatformMode = platformMode !== 'ALL' 
+    ? platformMode 
+    : (isNativeMobile ? 'MOBILE_INITIATOR' : 'WEB_APPROVER');
+
   // Active User Role Simulation: 'INITIATOR' | 'APPROVER_L1' | 'APPROVER_L2' | 'ADMIN'
-  const [userRole, setUserRole] = useState('INITIATOR');
+  const [userRole, setUserRole] = useState(activePlatformMode === 'MOBILE_INITIATOR' ? 'INITIATOR' : 'APPROVER_L1');
+  
+  // Biometric Facial Authentication Gateway State
+  const [isBiometricVerified, setIsBiometricVerified] = useState(activePlatformMode !== 'MOBILE_INITIATOR');
+  const [isScanningFace, setIsScanningFace] = useState(false);
+  const [scanStatus, setScanStatus] = useState('Position face inside camera frame');
+  const videoRef = useRef(null);
+
   const [currentUser, setCurrentUser] = useState({
     emp_id: 'EMP-1042',
     name: 'Sarah Connor',
@@ -17,7 +36,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
   });
 
   // Active View Mode: 'DASHBOARD' | 'CLAIM_ENTRY' | 'APPROVER_QUEUE' | 'APPROVER_REVIEW' | 'SETUP' | 'LEDGER'
-  const [viewMode, setViewMode] = useState('DASHBOARD');
+  const [viewMode, setViewMode] = useState(activePlatformMode === 'MOBILE_INITIATOR' ? 'DASHBOARD' : 'APPROVER_QUEUE');
 
   // Master Data States
   const [projects, setProjects] = useState([]);
@@ -27,6 +46,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
   const [approvalMatrix, setApprovalMatrix] = useState([]);
   const [ledgerEntries, setLedgerEntries] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [employees, setEmployees] = useState([]);
 
   // Selected Item States
   const [selectedClaim, setSelectedClaim] = useState(null);
@@ -79,6 +99,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
     const mList = api.getPettyCashMatrix();
     const lList = api.getPettyCashLedger();
     const bList = api.getActiveBranches();
+    const empList = api.getEmployees();
 
     setProjects(pList);
     setCategories(cList);
@@ -87,6 +108,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
     setApprovalMatrix(mList);
     setLedgerEntries(lList);
     setBranches(bList);
+    setEmployees(empList);
 
     if (pList.length > 0 && !claimForm.project_id) {
       setClaimForm(prev => ({ ...prev, project_id: String(pList[0].project_id) }));
@@ -96,12 +118,110 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
     }
   };
 
-  // Switch User Role Simulation
+  // Face Biometric Camera Scanner Handler
+  const startCameraScanner = async () => {
+    setIsScanningFace(true);
+    setScanStatus('Initializing biometric camera feed...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setScanStatus('Align face inside frame for biometric verification...');
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setScanStatus('Camera error: Unable to access camera feed.');
+      audioService.notify('Camera permission denied or camera unavailable', 'error');
+    }
+  };
+
+  const stopCameraScanner = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsScanningFace(false);
+  };
+
+  // Execute Face Biometric Scan Verification
+  const handlePerformFaceScan = async () => {
+    if (!videoRef.current) return;
+    setScanStatus('Scanning face vectors & matching database...');
+
+    try {
+      const detectResult = await detectFaceInVideo(videoRef.current);
+      if (!detectResult.hasFace) {
+        setScanStatus('No face detected in camera frame. Align face clearly.');
+        audioService.speak('No face detected. Align face inside frame.');
+        return;
+      }
+
+      const scannedVector = await extractFaceVectorFromVideo(videoRef.current, detectResult.faceBox);
+      if (!scannedVector) {
+        setScanStatus('Unable to extract 128D face vector. Hold still.');
+        return;
+      }
+
+      // Match face against enrolled employee database
+      const matched = matchFaceEmbedding(scannedVector, employees, 65);
+
+      if (matched && matched.employee) {
+        const emp = matched.employee;
+        const fullName = `${emp.first_name} ${emp.last_name}`;
+        setCurrentUser({
+          emp_id: emp.emp_id,
+          name: fullName,
+          role: 'Initiator',
+          branch_id: emp.branch_id || selectedBranchId || 1
+        });
+        setIsBiometricVerified(true);
+        stopCameraScanner();
+        audioService.playBeep('success');
+        audioService.speak(`Facial biometric verified. Welcome ${emp.first_name}.`);
+        alert(`✅ FACIAL BIOMETRIC VERIFIED!\n\nAuthenticated Employee: ${fullName} (${emp.emp_id})\nRole: Petty Cash Initiator`);
+        setViewMode('DASHBOARD');
+      } else {
+        setScanStatus('FACIAL BIOMETRIC NOT VERIFIED. UNENROLLED OR UNRECOGNIZED USER.');
+        audioService.playBeep('error');
+        audioService.speak('Facial biometric not verified. Access denied.');
+        alert('❌ FACIAL BIOMETRIC NOT VERIFIED!\n\nUnrecognized or un-enrolled employee face. Access to Petty Cash Initiator is blocked.');
+      }
+    } catch (err) {
+      console.error('Face verification error:', err);
+      setScanStatus('Scan error: ' + err.message);
+    }
+  };
+
+  // Demo Authentication Fallback (for immediate testing without physical camera faces)
+  const handleDemoAuthenticate = (empId = 'EMP-1042', name = 'Sarah Connor') => {
+    setCurrentUser({
+      emp_id: empId,
+      name: name,
+      role: 'Initiator',
+      branch_id: selectedBranchId || 1
+    });
+    setIsBiometricVerified(true);
+    stopCameraScanner();
+    audioService.playBeep('success');
+    audioService.speak(`Identity verified for ${name}. Welcome to Petty Cash Portal.`);
+    alert(`✅ FACIAL BIOMETRIC VERIFIED (DEMO AUTH)!\n\nEmployee: ${name} (${empId})\nRole: Petty Cash Initiator`);
+    setViewMode('DASHBOARD');
+  };
+
+  // Switch User Role Simulation (Web Mode)
   const handleRoleChange = (role) => {
     setUserRole(role);
     if (role === 'INITIATOR') {
       setCurrentUser({ emp_id: 'EMP-1042', name: 'Sarah Connor', role: 'Initiator', branch_id: selectedBranchId || 1 });
-      setViewMode('DASHBOARD');
+      if (!isBiometricVerified && activePlatformMode === 'MOBILE_INITIATOR') {
+        // Enforce face scan gateway
+      } else {
+        setViewMode('DASHBOARD');
+      }
     } else if (role === 'APPROVER_L1') {
       setCurrentUser({ emp_id: 'EMP-2001', name: 'Alex Mercer (L1 Manager)', role: 'Approver_L1', branch_id: selectedBranchId || 1 });
       setViewMode('APPROVER_QUEUE');
@@ -375,71 +495,79 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--app-bg, #000000)', color: 'var(--text-white, #ffffff)', minHeight: '100vh' }}>
       
       {/* TOP PORTAL ROLE & NAVIGATION BAR */}
-      <div style={{ background: 'var(--app-surface-bg, #0f172a)', borderBottom: '1px solid var(--border-subtle)', padding: '0.85rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ background: 'var(--app-surface-bg, #0f172a)', borderBottom: '1px solid var(--border-subtle)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={onBackToAdmin}
             className="branch-select-pill"
-            style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid var(--border-subtle)', padding: '6px 12px' }}
+            style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid var(--border-subtle)', padding: '6px 12px', whiteSpace: 'nowrap' }}
           >
             <ArrowLeft size={16} /> <span>Admin Portal</span>
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <DollarSign size={24} style={{ color: '#10b981' }} />
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>
-                ORION PETTY CASH PORTAL
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>
+                {activePlatformMode === 'MOBILE_INITIATOR' ? '📱 ORION MOBILE PETTY CASH INITIATOR' : '🖥️ ORION WEB PETTY CASH APPROVER PORTAL'}
               </h2>
-              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, letterSpacing: '0.08em' }}>
-                BIOMETRIC IDENTITY ROUTED WORKFLOW
+              <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.08em' }}>
+                {activePlatformMode === 'MOBILE_INITIATOR' ? 'FACE BIOMETRIC AUTHENTICATED ENTRY' : 'LEVEL 1 & LEVEL 2 APPROVAL WORKFLOW'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* ROLE SIMULATOR SWITCHER */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--app-card-bg, #1e293b)', padding: '4px 8px', borderRadius: 9999, border: '1px solid var(--border-subtle)' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', paddingLeft: 6 }}>Role Mode:</span>
+        {/* ROLE SIMULATOR SWITCHER (For Testing & Verification) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--app-card-bg, #1e293b)', padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border-subtle)', overflowX: 'auto', maxWidth: '100%' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', paddingLeft: 4, whiteSpace: 'nowrap' }}>Mode:</span>
+          
           <button
-            onClick={() => handleRoleChange('INITIATOR')}
+            onClick={() => {
+              setUserRole('INITIATOR');
+              if (!isBiometricVerified) setViewMode('FACE_GATEWAY');
+              else setViewMode('DASHBOARD');
+            }}
             style={{
-              padding: '5px 12px', borderRadius: 9999, border: 'none',
+              padding: '5px 10px', borderRadius: 6, border: 'none',
               background: userRole === 'INITIATOR' ? '#0284c7' : 'transparent',
               color: userRole === 'INITIATOR' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
+              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
             }}
           >
-            👤 Initiator
+            👤 Initiator (Mobile)
           </button>
+
           <button
             onClick={() => handleRoleChange('APPROVER_L1')}
             style={{
-              padding: '5px 12px', borderRadius: 9999, border: 'none',
+              padding: '5px 10px', borderRadius: 6, border: 'none',
               background: userRole === 'APPROVER_L1' ? '#059669' : 'transparent',
               color: userRole === 'APPROVER_L1' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
+              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
             }}
           >
-            🛡️ Approver L1
+            🛡️ Approver L1 (Web)
           </button>
+
           <button
             onClick={() => handleRoleChange('APPROVER_L2')}
             style={{
-              padding: '5px 12px', borderRadius: 9999, border: 'none',
+              padding: '5px 10px', borderRadius: 6, border: 'none',
               background: userRole === 'APPROVER_L2' ? '#7c3aed' : 'transparent',
               color: userRole === 'APPROVER_L2' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
+              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
             }}
           >
-            ⚖️ Approver L2
+            ⚖️ Approver L2 (Web)
           </button>
+
           <button
             onClick={() => handleRoleChange('ADMIN')}
             style={{
-              padding: '5px 12px', borderRadius: 9999, border: 'none',
+              padding: '5px 10px', borderRadius: 6, border: 'none',
               background: userRole === 'ADMIN' ? '#d97706' : 'transparent',
               color: userRole === 'ADMIN' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer'
+              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
             }}
           >
             ⚙️ Setup
@@ -448,8 +576,10 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
       </div>
 
       {/* SECONDARY NAVIGATION MENU BAR */}
-      <div style={{ background: 'var(--app-card-bg, #1e293b)', borderBottom: '1px solid var(--border-subtle)', padding: '0.5rem 1.5rem', display: 'flex', gap: 10 }}>
-        {userRole === 'INITIATOR' && (
+      <div style={{ background: 'var(--app-card-bg, #1e293b)', borderBottom: '1px solid var(--border-subtle)', padding: '0.5rem 1.25rem', display: 'flex', gap: 10, overflowX: 'auto' }}>
+        
+        {/* INITIATOR MENU TABS (MOBILE APK) */}
+        {userRole === 'INITIATOR' && isBiometricVerified && (
           <>
             <button
               onClick={() => setViewMode('DASHBOARD')}
@@ -457,7 +587,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'DASHBOARD' ? '#0284c7' : 'transparent',
                 color: viewMode === 'DASHBOARD' ? '#fff' : '#94a3b8',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
               <FileText size={16} /> My Dashboard
@@ -468,14 +598,28 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'CLAIM_ENTRY' ? '#0284c7' : 'transparent',
                 color: viewMode === 'CLAIM_ENTRY' ? '#fff' : '#94a3b8',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
               <Plus size={16} /> Raise Expense Claim
             </button>
+            <button
+              onClick={() => {
+                setIsBiometricVerified(false);
+                setViewMode('FACE_GATEWAY');
+              }}
+              style={{
+                padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444',
+                background: 'rgba(239, 68, 68, 0.15)', color: '#f87171',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', marginLeft: 'auto'
+              }}
+            >
+              <Lock size={16} /> Lock Biometric Session
+            </button>
           </>
         )}
 
+        {/* APPROVER MENU TABS (WEB APP) */}
         {(userRole === 'APPROVER_L1' || userRole === 'APPROVER_L2') && (
           <>
             <button
@@ -484,54 +628,144 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'APPROVER_QUEUE' ? '#059669' : 'transparent',
                 color: viewMode === 'APPROVER_QUEUE' ? '#fff' : '#94a3b8',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
               <Clock size={16} /> Pending Approvals Queue ({pendingApprovalsList.length})
             </button>
+            <button
+              onClick={() => setViewMode('LEDGER')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: viewMode === 'LEDGER' ? '#0284c7' : 'transparent',
+                color: viewMode === 'LEDGER' ? '#fff' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              <Layers size={16} /> Account Ledger Engine
+            </button>
           </>
         )}
 
-        <button
-          onClick={() => setViewMode('LEDGER')}
-          style={{
-            padding: '8px 16px', borderRadius: 8, border: 'none',
-            background: viewMode === 'LEDGER' ? '#0284c7' : 'transparent',
-            color: viewMode === 'LEDGER' ? '#fff' : '#94a3b8',
-            fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
-          }}
-        >
-          <Layers size={16} /> Account Ledger Engine
-        </button>
-
         {userRole === 'ADMIN' && (
-          <button
-            onClick={() => setViewMode('SETUP')}
-            style={{
-              padding: '8px 16px', borderRadius: 8, border: 'none',
-              background: viewMode === 'SETUP' ? '#d97706' : 'transparent',
-              color: viewMode === 'SETUP' ? '#fff' : '#94a3b8',
-              fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
-            }}
-          >
-            <Settings size={16} /> Maintenance & Master Setup
-          </button>
+          <>
+            <button
+              onClick={() => setViewMode('APPROVER_QUEUE')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: viewMode === 'APPROVER_QUEUE' ? '#059669' : 'transparent',
+                color: viewMode === 'APPROVER_QUEUE' ? '#fff' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              <Clock size={16} /> Approvals Queue ({pendingApprovalsList.length})
+            </button>
+            <button
+              onClick={() => setViewMode('LEDGER')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: viewMode === 'LEDGER' ? '#0284c7' : 'transparent',
+                color: viewMode === 'LEDGER' ? '#fff' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              <Layers size={16} /> Account Ledger Engine
+            </button>
+            <button
+              onClick={() => setViewMode('SETUP')}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: viewMode === 'SETUP' ? '#d97706' : 'transparent',
+                color: viewMode === 'SETUP' ? '#fff' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              <Settings size={16} /> Maintenance & Master Setup
+            </button>
+          </>
         )}
       </div>
 
       {/* PORTAL MAIN CONTENT BODY */}
-      <div style={{ flex: 1, padding: '1.75rem', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+
+        {/* =========================================================================
+           FACE BIOMETRIC SCANNER VERIFICATION GATEWAY (MOBILE APK ENTRY)
+           ========================================================================= */}
+        {(!isBiometricVerified && userRole === 'INITIATOR') && (
+          <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
+            <div className="form-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', border: '1.5px solid #0284c7' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(2, 132, 199, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7' }}>
+                <Camera size={32} />
+              </div>
+
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>FACE BIOMETRIC VERIFICATION GATEWAY</h3>
+                <p style={{ margin: '6px 0 0 0', fontSize: '0.82rem', color: 'var(--text-gray, #94a3b8)' }}>
+                  Scan face to verify identity before entering Petty Cash Initiator
+                </p>
+              </div>
+
+              {/* CAMERA FEED SCANNER BOX */}
+              <div style={{ position: 'relative', width: '100%', height: 260, background: '#000', borderRadius: 16, overflow: 'hidden', border: '2px solid #0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                {!isScanningFace && (
+                  <div style={{ position: 'absolute', color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
+                    Camera feed idle. Tap [Start Camera Scanner] below.
+                  </div>
+                )}
+                {/* SCANNER GUIDELINE OVERLAY */}
+                <div style={{ position: 'absolute', width: 170, height: 210, border: '2px dashed #0284c7', borderRadius: '50%', pointerEvents: 'none' }} />
+              </div>
+
+              <div style={{ fontSize: '0.82rem', color: '#0284c7', fontWeight: 700, padding: '8px 14px', background: 'rgba(2,132,199,0.1)', borderRadius: 8, width: '100%' }}>
+                Status: {scanStatus}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                {!isScanningFace ? (
+                  <button
+                    onClick={startCameraScanner}
+                    style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    <Camera size={18} /> Start Camera Scanner
+                  </button>
+                ) : (
+                  <button
+                    onClick={handlePerformFaceScan}
+                    style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    <UserCheck size={18} /> Verify Face Biometric
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleDemoAuthenticate('EMP-1042', 'Sarah Connor')}
+                  style={{ width: '100%', padding: 10, background: '#334155', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}
+                >
+                  ⚡ Demo Instant Verification (Sarah Connor - EMP-1042)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* =========================================================================
-           SCREEN 01: PETTY CASH INITIATOR DASHBOARD
+           SCREEN 01: PETTY CASH INITIATOR DASHBOARD (MOBILE APK)
            ========================================================================= */}
-        {viewMode === 'DASHBOARD' && (
+        {(isBiometricVerified && userRole === 'INITIATOR' && viewMode === 'DASHBOARD') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Petty Cash Initiator Dashboard</h3>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-gray, #94a3b8)' }}>
-                  User Session: <strong>{currentUser.name} ({currentUser.emp_id})</strong>
+                <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 700 }}>
+                  Biometric Authenticated User: <strong>{currentUser.name} ({currentUser.emp_id})</strong>
                 </span>
               </div>
               <button
@@ -549,7 +783,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
 
             {/* SUMMARY METRICS CARDS (CURRENT MONTH: AUGUST 2026) */}
             <div className="form-card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#38bdf8' }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0284c7' }}>
                 Summary Metrics (Current Month: August 2026)
               </h4>
               <div style={{ overflowX: 'auto' }}>
@@ -565,9 +799,11 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ fontWeight: 700 }}>Orion</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {projects.find(p => String(p.project_id) === String(claimForm.project_id))?.project_name || 'Orion'}
+                      </td>
                       <td>Downtown HQ (#001)</td>
-                      <td style={{ color: '#38bdf8', fontWeight: 700 }}>₹ {metrics.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#0284c7', fontWeight: 700 }}>₹ {metrics.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td style={{ color: '#f59e0b', fontWeight: 700 }}>₹ {metrics.claim_raised.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td style={{ color: '#10b981', fontWeight: 800, fontSize: '1rem' }}>₹ {metrics.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
@@ -600,14 +836,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                       if (c.current_status === 'Approved') { statusBg = 'rgba(16, 185, 129, 0.2)'; statusColor = '#10b981'; }
                       else if (c.current_status === 'In-Progress') { statusBg = 'rgba(245, 158, 11, 0.2)'; statusColor = '#f59e0b'; }
                       else if (c.current_status === 'Send Back') { statusBg = 'rgba(234, 179, 8, 0.2)'; statusColor = '#eab308'; }
-                      else if (c.current_status === 'Pending') { statusBg = 'rgba(56, 189, 248, 0.2)'; statusColor = '#38bdf8'; }
+                      else if (c.current_status === 'Pending') { statusBg = 'rgba(56, 189, 248, 0.2)'; statusColor = '#0284c7'; }
                       else if (c.current_status === 'Rejected') { statusBg = 'rgba(239, 68, 68, 0.2)'; statusColor = '#ef4444'; }
 
                       const catObj = categories.find(cat => cat.category_code === c.category_code);
 
                       return (
                         <tr key={c.claim_no}>
-                          <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#38bdf8' }}>{c.claim_no}</td>
+                          <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#0284c7' }}>{c.claim_no}</td>
                           <td>{catObj ? catObj.category_name : c.category_code}</td>
                           <td style={{ fontWeight: 700 }}>₹ {Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td>
@@ -626,6 +862,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                         </tr>
                       );
                     })}
+
+                    {claims.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          No expense claims submitted yet. Click [Raise Expense] to create your first claim!
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -641,7 +885,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
               <button
                 onClick={() => setViewMode('DASHBOARD')}
-                style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
               >
                 &lt; Back to Dashboard
               </button>
@@ -663,6 +907,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                     {projects.map(p => (
                       <option key={p.project_id} value={p.project_id}>{p.project_name}</option>
                     ))}
+                    {projects.length === 0 && <option value="1">Orion Main Project</option>}
                   </select>
                 </div>
 
@@ -704,9 +949,17 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                     onChange={(e) => setClaimForm({ ...claimForm, category_code: e.target.value })}
                     required
                   >
-                    {categories.filter(c => c.is_enabled).map(c => (
+                    {categories.filter(c => c.is_enabled !== false).map(c => (
                       <option key={c.category_code} value={c.category_code}>{c.category_name}</option>
                     ))}
+                    {categories.length === 0 && (
+                      <>
+                        <option value="C001">Mobile Claim</option>
+                        <option value="C003">Food Expense</option>
+                        <option value="C004">Travel Expense</option>
+                        <option value="C005">Material Purchase</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -773,7 +1026,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                 {/* READ-ONLY APPROVER AUDIT BOX */}
                 {selectedClaim && (
                   <div className="form-group full-width" style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 14, borderRadius: 8, border: '1px solid var(--border-subtle)', marginTop: 8 }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
                       READ-ONLY APPROVER AUDIT
                     </span>
                     <div style={{ marginTop: 8, fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -793,7 +1046,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                     <button
                       type="button"
                       onClick={() => setShowHistoryModal(true)}
-                      style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', textAlign: 'left', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'underline' }}
+                      style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', textAlign: 'left', fontWeight: 700, fontSize: '0.85rem', textDecoration: 'underline' }}
                     >
                       🔗 View Approval History Link
                     </button>
@@ -836,7 +1089,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                 </button>
               </div>
 
-              <p style={{ fontSize: 13, color: '#38bdf8', marginBottom: 16, fontFamily: 'monospace' }}>
+              <p style={{ fontSize: 13, color: '#0284c7', marginBottom: 16, fontFamily: 'monospace' }}>
                 Claim No: {selectedClaim.claim_no}
               </p>
 
@@ -860,7 +1113,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                         <td>{h.approver_name} ({h.approver_id})</td>
                         <td>{h.approval_level}</td>
                         <td>
-                          <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(56,189,248,0.2)', color: '#38bdf8', fontSize: '0.75rem', fontWeight: 700 }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(56,189,248,0.2)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>
                             {h.action_taken}
                           </span>
                         </td>
@@ -887,15 +1140,15 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
         )}
 
         {/* =========================================================================
-           SCREEN 04: PETTY CASH APPROVER DASHBOARD QUEUE
+           SCREEN 04: PETTY CASH APPROVER DASHBOARD QUEUE (WEB APP)
            ========================================================================= */}
         {viewMode === 'APPROVER_QUEUE' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Petty Cash Approver Portal</h3>
                 <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 700 }}>
-                  Active Queue: {userRole === 'APPROVER_L1' ? 'Level 1 Approvals' : 'Level 2 Finance Approvals'}
+                  Active Queue: {userRole === 'APPROVER_L1' ? 'Level 1 Approvals (Manager)' : 'Level 2 Finance Approvals'}
                 </span>
               </div>
               <div style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 16px', borderRadius: 9999, fontWeight: 800, fontSize: '0.88rem' }}>
@@ -904,7 +1157,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
             </div>
 
             <div className="form-card">
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, textTransform: 'uppercase', color: '#38bdf8' }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, textTransform: 'uppercase', color: '#0284c7' }}>
                 Pending Approval List
               </h4>
 
@@ -927,7 +1180,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
 
                       return (
                         <tr key={c.claim_no}>
-                          <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>{c.claim_no}</td>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>{c.claim_no}</td>
                           <td>{c.emp_id}</td>
                           <td>{projectObj ? projectObj.project_name : 'Orion'}</td>
                           <td>{catObj ? catObj.category_name : c.category_code}</td>
@@ -962,14 +1215,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
         )}
 
         {/* =========================================================================
-           SCREEN 05: PETTY CASH APPROVER REVIEW SCREEN
+           SCREEN 05: PETTY CASH APPROVER REVIEW SCREEN (WEB APP)
            ========================================================================= */}
         {viewMode === 'APPROVER_REVIEW' && selectedClaim && (
           <div style={{ maxWidth: 760, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
               <button
                 onClick={() => setViewMode('APPROVER_QUEUE')}
-                style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
               >
                 &lt; Back to Approvals
               </button>
@@ -979,7 +1232,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
             <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#38bdf8' }}>Claim No: {selectedClaim.claim_no}</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>Claim No: {selectedClaim.claim_no}</span>
                   <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Raised By: <strong>{selectedClaim.emp_id}</strong></span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, fontSize: '0.85rem' }}>
@@ -1047,11 +1300,11 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
         )}
 
         {/* =========================================================================
-           SECTION 4: MAINTENANCE & MASTER SETUP MODULES
+           SECTION 4: MAINTENANCE & MASTER SETUP MODULES (WEB APP)
            ========================================================================= */}
         {viewMode === 'SETUP' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Maintenance & Master Setup Modules</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -1177,7 +1430,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                   </button>
                 </form>
 
-                <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#38bdf8', textTransform: 'uppercase' }}>Active Category List</h5>
+                <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#0284c7', textTransform: 'uppercase' }}>Active Category List</h5>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -1207,6 +1460,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                         </td>
                       </tr>
                     ))}
+
+                    {categories.length === 0 && (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>No categories created. Enter name above to save your first category!</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1240,7 +1499,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                   </button>
                 </form>
 
-                <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#38bdf8', textTransform: 'uppercase' }}>Active Project List</h5>
+                <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#0284c7', textTransform: 'uppercase' }}>Active Project List</h5>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -1270,6 +1529,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                         </td>
                       </tr>
                     ))}
+
+                    {projects.length === 0 && (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>No projects created. Enter name above to create your first project!</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1279,14 +1544,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
         )}
 
         {/* =========================================================================
-           SECTION 5: ACCOUNT LEDGER ENGINE & REPORTING FORMAT
+           SECTION 5: ACCOUNT LEDGER ENGINE & REPORTING FORMAT (WEB APP)
            ========================================================================= */}
         {viewMode === 'LEDGER' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Account Ledger Engine & Report</h3>
-                <span style={{ fontSize: '0.82rem', color: '#38bdf8' }}>Mathematical Liquidity & Monthly Balance Engine</span>
+                <span style={{ fontSize: '0.82rem', color: '#0284c7' }}>Mathematical Liquidity & Monthly Balance Engine</span>
               </div>
               <button
                 onClick={() => alert('📄 Account Ledger Master Report exported to PDF / Excel!')}
@@ -1310,7 +1575,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
             </div>
 
             {/* FILTERS */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <select
                 value={ledgerFilterProject}
                 onChange={(e) => setLedgerFilterProject(e.target.value)}
@@ -1376,7 +1641,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                           <td>{l.year}</td>
                           <td style={{ fontWeight: 700 }}>{l.month}</td>
                           <td>₹ {Number(l.monthly_limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          <td style={{ color: '#38bdf8' }}>₹ {Number(l.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ color: '#0284c7' }}>₹ {Number(l.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td style={{ color: '#f59e0b' }}>₹ {Number(l.spend).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td>₹ {Number(l.claim_raised).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td style={{ fontWeight: 800, color: Number(l.ending_balance) < 0 ? '#ef4444' : '#10b981' }}>
@@ -1385,6 +1650,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                         </tr>
                       );
                     })}
+
+                    {ledgerEntries.length === 0 && (
+                      <tr>
+                        <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                          No monthly ledger balances recorded for Year {ledgerFilterYear}.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                   <tfoot>
                     <tr style={{ background: 'var(--app-surface-bg, #0f172a)', fontWeight: 800 }}>
