@@ -4,9 +4,10 @@
    FULL-BLEED MINIMAL PITCH-BLACK MOBILE DESIGN SYSTEM (Reference Image Aesthetic)
    ============================================================================= */
 :root {
-  --bg-black: #000000;
-  --bg-dark-surface: #09090b;
-  --bg-dark-card: #121215;
+  --app-bg: #000000;
+  --bg-black: var(--app-bg);
+  --bg-dark-surface: #121215;
+  --bg-dark-card: #18181b;
   --bg-avatar: #18181b;
 
   --border-subtle: rgba(255, 255, 255, 0.1);
@@ -32,11 +33,12 @@
 html, body {
   width: 100%;
   height: 100%;
-  background-color: #000000;
-  color: #ffffff;
+  background-color: var(--app-bg, #000000);
+  color: var(--text-white, #ffffff);
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* App Container */
@@ -45,8 +47,9 @@ html, body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background: #000000;
-  color: #ffffff;
+  background: var(--app-bg, #000000);
+  color: var(--text-white, #ffffff);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* =============================================================================
@@ -57,7 +60,7 @@ html, body {
   justify-content: space-between;
   align-items: center;
   padding: 0.9rem 1.25rem;
-  background: #000000;
+  background: var(--app-bg, #000000);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;

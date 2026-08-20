@@ -1,11 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut } from 'lucide-react';
+import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut, Palette } from 'lucide-react';
 import { KioskApp } from './components/KioskApp';
 import { AdminPortal } from './components/AdminPortal';
 import { api } from './services/supabase';
 import { audioService } from './services/audioService';
 
+const PRESET_THEMES = [
+  { id: 'black', name: 'Pitch Black (OLED)', bg: '#000000', text: '#ffffff', isLight: false },
+  { id: 'navy', name: 'Deep Executive Navy', bg: '#0b1329', text: '#ffffff', isLight: false },
+  { id: 'emerald', name: 'Bio Emerald Dark', bg: '#06231a', text: '#ffffff', isLight: false },
+  { id: 'purple', name: 'Royal Purple', bg: '#1e0a38', text: '#ffffff', isLight: false },
+  { id: 'light', name: 'High Contrast Light', bg: '#f1f5f9', text: '#0f172a', isLight: true },
+];
+
 export function App() {
+  // Background Color Customization State
+  const [customBgColor, setCustomBgColor] = useState(() => localStorage.getItem('rfap_bg_color') || '#000000');
+  const [showThemeModal, setShowThemeModal] = useState(false);
+
+  const applyThemeColor = (colorHex) => {
+    setCustomBgColor(colorHex);
+    localStorage.setItem('rfap_bg_color', colorHex);
+
+    const hex = colorHex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const isLight = brightness > 155;
+
+    const textColor = isLight ? '#0f172a' : '#ffffff';
+    const subTextColor = isLight ? '#475569' : '#a1a1aa';
+    const cardBg = isLight ? '#ffffff' : 'rgba(18, 18, 21, 0.95)';
+
+    document.documentElement.style.setProperty('--app-bg', colorHex);
+    document.documentElement.style.setProperty('--bg-black', colorHex);
+    document.documentElement.style.setProperty('--text-white', textColor);
+    document.documentElement.style.setProperty('--text-gray', subTextColor);
+    document.documentElement.style.setProperty('--bg-dark-surface', cardBg);
+    document.documentElement.style.setProperty('--bg-dark-card', cardBg);
+
+    if (document.body) {
+      document.body.style.backgroundColor = colorHex;
+      document.body.style.color = textColor;
+    }
+  };
+
+  useEffect(() => {
+    applyThemeColor(customBgColor);
+  }, []);
   // Platform Detection: Native Mobile APK (Capacitor) vs Web App Browser
   const isNativeMobile = !!(
     window.Capacitor &&
@@ -199,6 +242,27 @@ export function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Background Theme Customizer Button */}
+          <button
+            onClick={() => setShowThemeModal(true)}
+            className="branch-select-pill"
+            style={{
+              background: 'rgba(168, 85, 247, 0.15)',
+              border: '1px solid #a855f7',
+              color: '#c084fc',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+            title="Customize Background Color & Theme"
+          >
+            <Palette size={16} />
+            <span>Theme</span>
+          </button>
+
           <div
             className="branch-select-pill"
             style={{ background: 'rgba(2, 132, 199, 0.15)', border: '1px solid #0284c7', cursor: 'default' }}
@@ -370,6 +434,96 @@ export function App() {
         </div>
       )}
         </>
+      )}
+
+      {/* Background Color Customization Modal */}
+      {showThemeModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div className="modal-card" style={{ background: '#1e293b', color: '#fff', borderRadius: 20, padding: 28, maxWidth: 460, width: '100%', border: '1px solid #0284c7', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.9)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Palette size={22} style={{ color: '#c084fc' }} />
+                <h3 style={{ margin: 0, fontSize: 18 }}>Customize Background Color</h3>
+              </div>
+              <button onClick={() => setShowThemeModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20, lineHeight: 1.5 }}>
+              Select a preset background theme or pick any custom color to adjust contrast and readability for your environment.
+            </p>
+
+            {/* Presets */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Preset Color Themes
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {PRESET_THEMES.map(theme => (
+                  <button
+                    key={theme.id}
+                    onClick={() => applyThemeColor(theme.bg)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: customBgColor.toLowerCase() === theme.bg.toLowerCase() ? '2px solid #38bdf8' : '1px solid #475569',
+                      background: theme.bg,
+                      color: theme.text,
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span style={{ width: 14, height: 14, borderRadius: '50%', background: theme.bg, border: '1px solid #fff' }}></span>
+                    <span>{theme.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Color Picker */}
+            <div style={{ background: '#0f172a', padding: 16, borderRadius: 12, border: '1px solid #334155', marginBottom: 20 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
+                  Pick Custom Color:
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input
+                    type="color"
+                    value={customBgColor}
+                    onChange={(e) => applyThemeColor(e.target.value)}
+                    style={{ width: 44, height: 34, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'transparent' }}
+                  />
+                  <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#38bdf8', fontWeight: 800 }}>
+                    {customBgColor.toUpperCase()}
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            <button
+              onClick={() => setShowThemeModal(false)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Apply Theme & Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
