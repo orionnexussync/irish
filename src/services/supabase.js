@@ -56,7 +56,13 @@ const STORAGE_KEYS = {
   SOS_LOGS: 'rfap_sos_logs',
   EMAIL_SCHEDULES: 'rfap_email_schedules',
   REGULARIZATION: 'rfap_regularization',
-  BDAY_SETTINGS: 'rfap_bday_settings'
+  BDAY_SETTINGS: 'rfap_bday_settings',
+  PETTY_CASH_PROJECTS: 'rfap_petty_cash_projects',
+  PETTY_CASH_CATEGORIES: 'rfap_petty_cash_categories',
+  PETTY_CASH_CLAIMS: 'rfap_petty_cash_claims',
+  PETTY_CASH_HISTORY: 'rfap_petty_cash_history',
+  PETTY_CASH_MATRIX: 'rfap_petty_cash_matrix',
+  PETTY_CASH_LEDGER: 'rfap_petty_cash_ledger'
 };
 
 // Initial Seed Data
@@ -94,7 +100,44 @@ const initialSeed = {
     email_time: '08:00 AM',
     show_kiosk_banner: true,
     include_daily_report: true
-  }
+  },
+  petty_cash_projects: [
+    { project_id: 1, project_name: 'Infosys', branch_id: 1, is_active: false },
+    { project_id: 2, project_name: 'Orion', branch_id: 1, is_active: true },
+    { project_id: 3, project_name: 'NEXUS', branch_id: 2, is_active: true }
+  ],
+  petty_cash_categories: [
+    { category_code: 'C001', category_name: 'Mobile Claim', is_enabled: true },
+    { category_code: 'C002', category_name: 'Bike Conveyance', is_enabled: false },
+    { category_code: 'C003', category_name: 'Food Expense', is_enabled: true },
+    { category_code: 'C004', category_name: 'Travel Expense', is_enabled: true },
+    { category_code: 'C005', category_name: 'Material Purchase', is_enabled: true },
+    { category_code: 'C006', category_name: 'Office Supplies', is_enabled: true }
+  ],
+  petty_cash_claims: [
+    { claim_no: 'EMP10421908261015', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C001', expense_date: '2026-08-19', invoice_no: 'INV-1001', amount: 1200.00, reasons: 'Mobile monthly plan reimbursement', attachment_path: 'bill_mobile.pdf', current_status: 'Approved', created_at: '2026-08-19 10:15:00' },
+    { claim_no: 'EMP10421908261130', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C004', expense_date: '2026-08-19', invoice_no: 'INV-882910', amount: 8000.00, reasons: 'Client site visit transportation charges', attachment_path: 'receipt_travel.pdf', current_status: 'In-Progress', created_at: '2026-08-19 11:30:00' },
+    { claim_no: 'EMP10421908261420', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C005', expense_date: '2026-08-19', invoice_no: 'INV-1002', amount: 3500.00, reasons: 'Material Purchase for project site', attachment_path: 'invoice_material.pdf', current_status: 'Send Back', created_at: '2026-08-19 14:20:00' },
+    { claim_no: 'EMP10421908261600', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C003', expense_date: '2026-08-19', invoice_no: 'INV-1003', amount: 2100.00, reasons: 'On-site team food expense', attachment_path: 'bill_food.jpg', current_status: 'Pending', created_at: '2026-08-19 16:00:00' },
+    { claim_no: 'EMP10421908261745', emp_id: 'EMP-1042', project_id: 2, branch_id: 1, category_code: 'C006', expense_date: '2026-08-19', invoice_no: 'INV-1004', amount: 6000.00, reasons: 'Office supplies & printer cartridges', attachment_path: 'receipt_office.pdf', current_status: 'Rejected', created_at: '2026-08-19 17:45:00' }
+  ],
+  petty_cash_history: [
+    { history_id: 1, claim_no: 'EMP10421908261130', approver_id: 'EMP-1042', approver_name: 'Sarah Connor', approval_level: 'Level 0', action_taken: 'Initiated', remarks: 'Claim Submitted', action_timestamp: '19/08/2026 10:15' },
+    { history_id: 2, claim_no: 'EMP10421908261130', approver_id: 'EMP-2001', approver_name: 'Alex Mercer', approval_level: 'Level 1', action_taken: 'Approve', remarks: 'Verified Level 1', action_timestamp: '19/08/2026 11:30' },
+    { history_id: 3, claim_no: 'EMP10421908261420', approver_id: 'EMP-3005', approver_name: 'James Vance', approval_level: 'Level 2', action_taken: 'Send Back', remarks: 'Original tax invoice missing. Please re-attach.', action_timestamp: '19/08/2026 14:00' }
+  ],
+  petty_cash_matrix: [
+    { matrix_id: 1, project_scope: 'ALL', amount_constraint: 'GREATER_THAN', threshold_value: 5000, target_approver: 'Approver_L2' }
+  ],
+  petty_cash_ledger: [
+    { ledger_id: 1, project_id: 2, branch_id: 1, year: 2026, month: 'April', monthly_limit: 50000, opening_balance: 50000, spend: 30000, claim_raised: 0, ending_balance: 20000 },
+    { ledger_id: 2, project_id: 2, branch_id: 1, year: 2026, month: 'May', monthly_limit: 50000, opening_balance: 70000, spend: 60000, claim_raised: 0, ending_balance: 10000 },
+    { ledger_id: 3, project_id: 2, branch_id: 1, year: 2026, month: 'June', monthly_limit: 50000, opening_balance: 60000, spend: 65000, claim_raised: 0, ending_balance: -5000 },
+    { ledger_id: 4, project_id: 2, branch_id: 1, year: 2026, month: 'July', monthly_limit: 50000, opening_balance: 45000, spend: 45000, claim_raised: 0, ending_balance: 0 },
+    { ledger_id: 5, project_id: 2, branch_id: 1, year: 2026, month: 'August', monthly_limit: 50000, opening_balance: 50000, spend: 40000, claim_raised: 0, ending_balance: 10000 },
+    { ledger_id: 6, project_id: 2, branch_id: 1, year: 2026, month: 'September', monthly_limit: 50000, opening_balance: 60000, spend: 0, claim_raised: 0, ending_balance: 60000 },
+    { ledger_id: 7, project_id: 2, branch_id: 1, year: 2026, month: 'October', monthly_limit: 60000, opening_balance: 120000, spend: 0, claim_raised: 0, ending_balance: 120000 }
+  ]
 };
 
 function getLocalData(key, defaultVal) {
@@ -1092,6 +1135,77 @@ export const api = {
     setLocalData(STORAGE_KEYS.BDAY_SETTINGS, settings);
     return settings;
   },
+
+  // Petty Cash API Engine
+  getPettyCashProjects: () => getLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, initialSeed.petty_cash_projects),
+  savePettyCashProject: (projectName, branchId) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, initialSeed.petty_cash_projects);
+    const newP = {
+      project_id: Date.now(),
+      project_name: projectName,
+      branch_id: Number(branchId || 1),
+      is_active: true
+    };
+    const updated = [...list, newP];
+    setLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, updated);
+    return newP;
+  },
+  toggleProjectStatus: (id, isActive) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, initialSeed.petty_cash_projects);
+    const updated = list.map(p => p.project_id === id ? { ...p, is_active: isActive } : p);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, updated);
+  },
+
+  getPettyCashCategories: () => getLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, initialSeed.petty_cash_categories),
+  savePettyCashCategory: (categoryName) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, initialSeed.petty_cash_categories);
+    const code = `C${String(list.length + 1).padStart(3, '0')}`;
+    const newCat = { category_code: code, category_name: categoryName, is_enabled: true };
+    const updated = [...list, newCat];
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, updated);
+    return newCat;
+  },
+  toggleCategoryStatus: (code, isEnabled) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, initialSeed.petty_cash_categories);
+    const updated = list.map(c => c.category_code === code ? { ...c, is_enabled: isEnabled } : c);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, updated);
+  },
+
+  getPettyCashClaims: () => getLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, initialSeed.petty_cash_claims),
+  savePettyCashClaim: (claimObj) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, initialSeed.petty_cash_claims);
+    const existingIndex = list.findIndex(c => c.claim_no === claimObj.claim_no);
+    let updated;
+    if (existingIndex >= 0) {
+      updated = [...list];
+      updated[existingIndex] = { ...updated[existingIndex], ...claimObj };
+    } else {
+      updated = [claimObj, ...list];
+    }
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, updated);
+    return claimObj;
+  },
+  updateClaimStatus: (claimNo, newStatus) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, initialSeed.petty_cash_claims);
+    const updated = list.map(c => c.claim_no === claimNo ? { ...c, current_status: newStatus } : c);
+    setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, updated);
+  },
+
+  getPettyCashHistory: () => getLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, initialSeed.petty_cash_history),
+  addClaimHistory: (historyObj) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, initialSeed.petty_cash_history);
+    const updated = [...list, { history_id: Date.now(), ...historyObj }];
+    setLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, updated);
+  },
+
+  getPettyCashMatrix: () => getLocalData(STORAGE_KEYS.PETTY_CASH_MATRIX, initialSeed.petty_cash_matrix),
+  saveApprovalMatrixRule: (ruleObj) => {
+    const list = getLocalData(STORAGE_KEYS.PETTY_CASH_MATRIX, initialSeed.petty_cash_matrix);
+    const updated = [...list, { matrix_id: Date.now(), ...ruleObj }];
+    setLocalData(STORAGE_KEYS.PETTY_CASH_MATRIX, updated);
+  },
+
+  getPettyCashLedger: () => getLocalData(STORAGE_KEYS.PETTY_CASH_LEDGER, initialSeed.petty_cash_ledger),
 
   // Clear All Employee & Attendance Data
   clearAllDatabaseData: async () => {

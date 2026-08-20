@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, UserPlus, Users, CalendarOff, Edit3, Clock, Calendar,
   Mail, Cake, ShieldAlert, CheckCircle2, XCircle, Search, Trash2, Download, Send, Plus, RefreshCw, FileText,
-  MapPin, ToggleLeft, ToggleRight, Lock, Printer, Eye, FileSpreadsheet, RotateCcw, Archive, Building, LogOut
+  MapPin, ToggleLeft, ToggleRight, Lock, Printer, Eye, FileSpreadsheet, RotateCcw, Archive, Building, LogOut, DollarSign
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { api } from '../services/supabase';
+import { PettyCashPortal } from './PettyCashPortal';
 
 export function AdminPortal({ selectedBranchId, onLockAdmin, onBranchesUpdated, onCompanyLogout }) {
   // Admin Tabs: 'DASHBOARD' | 'REPORTS' | 'ONBOARDING' | 'DIRECTORY' | 'LEAVES' | 'REGULARIZATION' | 'SHIFTS' | 'HOLIDAYS' | 'LOCATIONS' | 'EMAIL_SCHEDULES' | 'BIRTHDAYS' | 'SOS_LOGS' | 'COMPANIES'
@@ -878,6 +879,9 @@ CREATE POLICY "Allow anon full access to tbl_sos_events" ON tbl_sos_events FOR A
           </button>
           <button className={activeTab === 'COMPANIES' ? 'active' : ''} onClick={() => setActiveTab('COMPANIES')}>
             <Building size={18} /> Company Connections
+          </button>
+          <button className={activeTab === 'PETTY_CASH' ? 'active' : ''} onClick={() => setActiveTab('PETTY_CASH')}>
+            <DollarSign size={18} style={{ color: '#10b981' }} /> Petty Cash Portal
           </button>
         </nav>
 
@@ -2017,6 +2021,10 @@ CREATE POLICY "Allow anon full access to tbl_sos_events" ON tbl_sos_events FOR A
               </table>
             </div>
           </div>
+        )}
+
+        {activeTab === 'PETTY_CASH' && (
+          <PettyCashPortal selectedBranchId={selectedBranchId} onBackToAdmin={() => setActiveTab('DASHBOARD')} />
         )}
       </main>
 

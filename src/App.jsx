@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut, Palette } from 'lucide-react';
+import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut, Palette, DollarSign } from 'lucide-react';
 import { KioskApp } from './components/KioskApp';
 import { AdminPortal } from './components/AdminPortal';
+import { PettyCashPortal } from './components/PettyCashPortal';
 import { api } from './services/supabase';
 import { audioService } from './services/audioService';
 
@@ -257,6 +258,12 @@ export function App() {
               <Lock size={14} style={{ marginLeft: 6, opacity: 0.7 }} />
             )}
           </button>
+          <button
+            className={`nav-mode-btn ${viewMode === 'PETTY_CASH' ? 'active' : ''}`}
+            onClick={() => setViewMode('PETTY_CASH')}
+          >
+            <DollarSign size={18} style={{ color: '#10b981' }} /> Petty Cash Portal
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -310,6 +317,11 @@ export function App() {
           selectedBranchId={selectedBranchId}
           onBranchChange={setSelectedBranchId}
           onCompanyLogout={handleCompanyLogout}
+        />
+      ) : viewMode === 'PETTY_CASH' ? (
+        <PettyCashPortal
+          selectedBranchId={selectedBranchId}
+          onBackToAdmin={() => setViewMode('ADMIN')}
         />
       ) : (
         <AdminPortal
