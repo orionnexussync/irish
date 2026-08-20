@@ -71,29 +71,13 @@ const initialSeed = {
     { branch_id: 1, branch_name: 'Downtown HQ (#001)', location_code: 'HQ-001', address: '100 Financial Center Blvd', manager_name: 'Anita Roy', manager_phone: '+1 555-010-1002', is_active: true },
     { branch_id: 2, branch_name: 'North Branch (#002)', location_code: 'NB-002', address: '45 Innovation Way', manager_name: 'David Miller', manager_phone: '+1 555-010-1003', is_active: true }
   ],
-  shifts: [
-    { shift_id: 1, shift_name: 'Morning Shift', start_time: '08:00', end_time: '16:00', grace_period_m: 15, half_day_threshold_h: 4, branch_scope: 'ALL' },
-    { shift_id: 2, shift_name: 'General Shift', start_time: '09:00', end_time: '18:00', grace_period_m: 15, half_day_threshold_h: 4, branch_scope: 'ALL' },
-    { shift_id: 3, shift_name: 'Night Shift', start_time: '20:00', end_time: '04:00', grace_period_m: 10, half_day_threshold_h: 4, branch_scope: 'ALL' }
-  ],
+  shifts: [],
   employees: [],
   attendance: [],
   leaves: [],
-  holidays: [
-    { holiday_id: 1, holiday_date: '2026-01-01', holiday_description: "New Year's Day", recurring_type: 'YEARLY', day_of_week: null, rule_scope: null, branch_id: null },
-    { holiday_id: 2, holiday_date: '2026-08-15', holiday_description: 'Independence Day', recurring_type: 'YEARLY', day_of_week: null, rule_scope: null, branch_id: null },
-    { holiday_id: 3, holiday_date: '2026-10-02', holiday_description: 'Gandhi Jayanti', recurring_type: 'YEARLY', day_of_week: null, rule_scope: null, branch_id: null },
-    { holiday_id: 4, holiday_date: null, holiday_description: 'Sunday Weekly Off', recurring_type: 'WEEKLY', day_of_week: 7, rule_scope: 'ALL_SUN', branch_id: null },
-    { holiday_id: 5, holiday_date: null, holiday_description: 'Saturday Weekly Off', recurring_type: 'WEEKLY', day_of_week: 6, rule_scope: 'ALL_SAT', branch_id: null }
-  ],
+  holidays: [],
   sos_logs: [],
-  email_schedules: [
-    {
-      schedule_id: 1, config_name: 'Daily HQ Operations Summary', recipient_emails: 'manager1@company.com, hr@company.com',
-      target_branch_id: 1, report_type: 'DAILY_ATTENDANCE', export_format: 'XLSX', dispatch_frequency: 'Daily',
-      dispatch_time: '07:00 PM', is_active: true
-    }
-  ],
+  email_schedules: [],
   regularization: [],
   bday_settings: {
     auto_email: true,
@@ -101,24 +85,11 @@ const initialSeed = {
     show_kiosk_banner: true,
     include_daily_report: true
   },
-  petty_cash_projects: [
-    { project_id: 1, project_name: 'Infosys', branch_id: 1, is_active: false },
-    { project_id: 2, project_name: 'Orion', branch_id: 1, is_active: true },
-    { project_id: 3, project_name: 'NEXUS', branch_id: 2, is_active: true }
-  ],
-  petty_cash_categories: [
-    { category_code: 'C001', category_name: 'Mobile Claim', is_enabled: true },
-    { category_code: 'C002', category_name: 'Bike Conveyance', is_enabled: false },
-    { category_code: 'C003', category_name: 'Food Expense', is_enabled: true },
-    { category_code: 'C004', category_name: 'Travel Expense', is_enabled: true },
-    { category_code: 'C005', category_name: 'Material Purchase', is_enabled: true },
-    { category_code: 'C006', category_name: 'Office Supplies', is_enabled: true }
-  ],
+  petty_cash_projects: [],
+  petty_cash_categories: [],
   petty_cash_claims: [],
   petty_cash_history: [],
-  petty_cash_matrix: [
-    { matrix_id: 1, project_scope: 'ALL', amount_constraint: 'GREATER_THAN', threshold_value: 5000, target_approver: 'Approver_L2' }
-  ],
+  petty_cash_matrix: [],
   petty_cash_ledger: []
 };
 
@@ -142,16 +113,37 @@ function setLocalData(key, val) {
 }
 
 export function initStore() {
+  // Purge legacy dummy sample data from browser cache
+  const DUMMY_PURGED_KEY = 'rfap_dummy_data_purged_v4';
+  if (!localStorage.getItem(DUMMY_PURGED_KEY)) {
+    localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+    localStorage.removeItem(STORAGE_KEYS.HOLIDAYS);
+    localStorage.removeItem(STORAGE_KEYS.EMAIL_SCHEDULES);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_PROJECTS);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_CATEGORIES);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_CLAIMS);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_HISTORY);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_MATRIX);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_LEDGER);
+    localStorage.setItem(DUMMY_PURGED_KEY, 'true');
+  }
+
   if (!localStorage.getItem(STORAGE_KEYS.BRANCHES)) setLocalData(STORAGE_KEYS.BRANCHES, initialSeed.branches);
-  if (!localStorage.getItem(STORAGE_KEYS.SHIFTS)) setLocalData(STORAGE_KEYS.SHIFTS, initialSeed.shifts);
+  if (!localStorage.getItem(STORAGE_KEYS.SHIFTS)) setLocalData(STORAGE_KEYS.SHIFTS, []);
   if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) setLocalData(STORAGE_KEYS.EMPLOYEES, []);
   if (!localStorage.getItem(STORAGE_KEYS.ATTENDANCE)) setLocalData(STORAGE_KEYS.ATTENDANCE, []);
   if (!localStorage.getItem(STORAGE_KEYS.LEAVES)) setLocalData(STORAGE_KEYS.LEAVES, []);
-  if (!localStorage.getItem(STORAGE_KEYS.HOLIDAYS)) setLocalData(STORAGE_KEYS.HOLIDAYS, initialSeed.holidays);
+  if (!localStorage.getItem(STORAGE_KEYS.HOLIDAYS)) setLocalData(STORAGE_KEYS.HOLIDAYS, []);
   if (!localStorage.getItem(STORAGE_KEYS.SOS_LOGS)) setLocalData(STORAGE_KEYS.SOS_LOGS, []);
-  if (!localStorage.getItem(STORAGE_KEYS.EMAIL_SCHEDULES)) setLocalData(STORAGE_KEYS.EMAIL_SCHEDULES, initialSeed.email_schedules);
+  if (!localStorage.getItem(STORAGE_KEYS.EMAIL_SCHEDULES)) setLocalData(STORAGE_KEYS.EMAIL_SCHEDULES, []);
   if (!localStorage.getItem(STORAGE_KEYS.REGULARIZATION)) setLocalData(STORAGE_KEYS.REGULARIZATION, []);
   if (!localStorage.getItem(STORAGE_KEYS.BDAY_SETTINGS)) setLocalData(STORAGE_KEYS.BDAY_SETTINGS, initialSeed.bday_settings);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_PROJECTS)) setLocalData(STORAGE_KEYS.PETTY_CASH_PROJECTS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_CATEGORIES)) setLocalData(STORAGE_KEYS.PETTY_CASH_CATEGORIES, []);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_CLAIMS)) setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_HISTORY)) setLocalData(STORAGE_KEYS.PETTY_CASH_HISTORY, []);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_MATRIX)) setLocalData(STORAGE_KEYS.PETTY_CASH_MATRIX, []);
+  if (!localStorage.getItem(STORAGE_KEYS.PETTY_CASH_LEDGER)) setLocalData(STORAGE_KEYS.PETTY_CASH_LEDGER, []);
 }
 
 export function clearCompanyCache() {
@@ -166,6 +158,12 @@ export function clearCompanyCache() {
     localStorage.removeItem(STORAGE_KEYS.EMAIL_SCHEDULES);
     localStorage.removeItem(STORAGE_KEYS.REGULARIZATION);
     localStorage.removeItem(STORAGE_KEYS.BDAY_SETTINGS);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_PROJECTS);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_CATEGORIES);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_CLAIMS);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_HISTORY);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_MATRIX);
+    localStorage.removeItem(STORAGE_KEYS.PETTY_CASH_LEDGER);
   } catch (e) {
     console.warn('clearCompanyCache error:', e);
   }

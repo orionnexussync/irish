@@ -122,11 +122,11 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
       l.month === 'August' &&
       (projectId === 'ALL' || String(l.project_id) === String(projectId))
     ) || {
-      monthly_limit: 50000,
-      opening_balance: 50000,
-      spend: 12500,
+      monthly_limit: 0,
+      opening_balance: 0,
+      spend: 0,
       claim_raised: 0,
-      ending_balance: 37500
+      ending_balance: 0
     };
 
     // Calculate sum of approved claims in August 2026
@@ -139,7 +139,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
       .filter(c => c.current_status === 'Pending' || c.current_status === 'In-Progress')
       .reduce((sum, c) => sum + Number(c.amount || 0), 0);
 
-    const openingBal = Number(monthLedger.opening_balance || 50000);
+    const openingBal = Number(monthLedger.opening_balance || 0);
     const spend = approvedSum || Number(monthLedger.spend || 0);
     const raised = pendingSum;
     const currentBal = openingBal - spend - raised;
@@ -1388,12 +1388,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin }) {
                   </tbody>
                   <tfoot>
                     <tr style={{ background: 'var(--app-surface-bg, #0f172a)', fontWeight: 800 }}>
-                      <td colSpan={5}>TOTAL (YEAR 2026)</td>
-                      <td>₹ 3,60,000.00</td>
-                      <td>₹ 4,55,000.00</td>
-                      <td>₹ 2,35,000.00</td>
-                      <td>₹ 0.00</td>
-                      <td style={{ color: '#10b981', fontSize: '0.95rem' }}>₹ 2,15,000.00</td>
+                      <td colSpan={5}>TOTAL (YEAR {ledgerFilterYear})</td>
+                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.monthly_limit || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.opening_balance || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.spend || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.claim_raised || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#10b981', fontSize: '0.95rem' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.ending_balance || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   </tfoot>
                 </table>
