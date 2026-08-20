@@ -502,84 +502,27 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             className="branch-select-pill"
             style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid var(--border-subtle)', padding: '6px 12px', whiteSpace: 'nowrap' }}
           >
-            <ArrowLeft size={16} /> <span>Admin Portal</span>
+            <ArrowLeft size={16} /> <span>Back</span>
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <DollarSign size={24} style={{ color: '#10b981' }} />
             <div>
               <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>
-                {activePlatformMode === 'MOBILE_INITIATOR' ? '📱 ORION MOBILE PETTY CASH INITIATOR' : '🖥️ ORION WEB PETTY CASH APPROVER PORTAL'}
+                {activePlatformMode === 'MOBILE_INITIATOR' ? '📱 PETTY CASH INITIATOR (MOBILE APK)' : '🖥️ PETTY CASH APPROVER PORTAL (WEB APP)'}
               </h2>
               <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.08em' }}>
-                {activePlatformMode === 'MOBILE_INITIATOR' ? 'FACE BIOMETRIC AUTHENTICATED ENTRY' : 'LEVEL 1 & LEVEL 2 APPROVAL WORKFLOW'}
+                {activePlatformMode === 'MOBILE_INITIATOR' ? 'FACE BIOMETRIC AUTHENTICATED ENTRY' : 'LEVEL 1 & LEVEL 2 MANAGEMENT WORKFLOW'}
               </span>
             </div>
           </div>
-        </div>
-
-        {/* ROLE SIMULATOR SWITCHER (For Testing & Verification) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--app-card-bg, #1e293b)', padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border-subtle)', overflowX: 'auto', maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', paddingLeft: 4, whiteSpace: 'nowrap' }}>Mode:</span>
-          
-          <button
-            onClick={() => {
-              setUserRole('INITIATOR');
-              if (!isBiometricVerified) setViewMode('FACE_GATEWAY');
-              else setViewMode('DASHBOARD');
-            }}
-            style={{
-              padding: '5px 10px', borderRadius: 6, border: 'none',
-              background: userRole === 'INITIATOR' ? '#0284c7' : 'transparent',
-              color: userRole === 'INITIATOR' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
-            }}
-          >
-            👤 Initiator (Mobile)
-          </button>
-
-          <button
-            onClick={() => handleRoleChange('APPROVER_L1')}
-            style={{
-              padding: '5px 10px', borderRadius: 6, border: 'none',
-              background: userRole === 'APPROVER_L1' ? '#059669' : 'transparent',
-              color: userRole === 'APPROVER_L1' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
-            }}
-          >
-            🛡️ Approver L1 (Web)
-          </button>
-
-          <button
-            onClick={() => handleRoleChange('APPROVER_L2')}
-            style={{
-              padding: '5px 10px', borderRadius: 6, border: 'none',
-              background: userRole === 'APPROVER_L2' ? '#7c3aed' : 'transparent',
-              color: userRole === 'APPROVER_L2' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
-            }}
-          >
-            ⚖️ Approver L2 (Web)
-          </button>
-
-          <button
-            onClick={() => handleRoleChange('ADMIN')}
-            style={{
-              padding: '5px 10px', borderRadius: 6, border: 'none',
-              background: userRole === 'ADMIN' ? '#d97706' : 'transparent',
-              color: userRole === 'ADMIN' ? '#fff' : '#94a3b8',
-              fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
-            }}
-          >
-            ⚙️ Setup
-          </button>
         </div>
       </div>
 
       {/* SECONDARY NAVIGATION MENU BAR */}
       <div style={{ background: 'var(--app-card-bg, #1e293b)', borderBottom: '1px solid var(--border-subtle)', padding: '0.5rem 1.25rem', display: 'flex', gap: 10, overflowX: 'auto' }}>
         
-        {/* INITIATOR MENU TABS (MOBILE APK) */}
-        {userRole === 'INITIATOR' && isBiometricVerified && (
+        {/* INITIATOR MENU TABS (MOBILE APK ONLY) */}
+        {activePlatformMode === 'MOBILE_INITIATOR' && isBiometricVerified && (
           <>
             <button
               onClick={() => setViewMode('DASHBOARD')}
@@ -614,25 +557,44 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', marginLeft: 'auto'
               }}
             >
-              <Lock size={16} /> Lock Biometric Session
+              <Lock size={16} /> Lock Session
             </button>
           </>
         )}
 
-        {/* APPROVER MENU TABS (WEB APP) */}
-        {(userRole === 'APPROVER_L1' || userRole === 'APPROVER_L2') && (
+        {/* APPROVER & MANAGER MENU TABS (WEB APP ONLY) */}
+        {activePlatformMode !== 'MOBILE_INITIATOR' && (
           <>
             <button
-              onClick={() => setViewMode('APPROVER_QUEUE')}
+              onClick={() => {
+                setUserRole('APPROVER_L1');
+                setViewMode('APPROVER_QUEUE');
+              }}
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
-                background: viewMode === 'APPROVER_QUEUE' ? '#059669' : 'transparent',
-                color: viewMode === 'APPROVER_QUEUE' ? '#fff' : '#94a3b8',
+                background: (userRole === 'APPROVER_L1' && viewMode === 'APPROVER_QUEUE') ? '#059669' : 'transparent',
+                color: (userRole === 'APPROVER_L1' && viewMode === 'APPROVER_QUEUE') ? '#fff' : '#94a3b8',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
-              <Clock size={16} /> Pending Approvals Queue ({pendingApprovalsList.length})
+              <Clock size={16} /> 🛡️ Approver L1 Queue ({pendingApprovalsList.length})
             </button>
+
+            <button
+              onClick={() => {
+                setUserRole('APPROVER_L2');
+                setViewMode('APPROVER_QUEUE');
+              }}
+              style={{
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: (userRole === 'APPROVER_L2' && viewMode === 'APPROVER_QUEUE') ? '#7c3aed' : 'transparent',
+                color: (userRole === 'APPROVER_L2' && viewMode === 'APPROVER_QUEUE') ? '#fff' : '#94a3b8',
+                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
+              }}
+            >
+              <Clock size={16} /> ⚖️ Approver L2 Queue
+            </button>
+
             <button
               onClick={() => setViewMode('LEDGER')}
               style={{
@@ -644,33 +606,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             >
               <Layers size={16} /> Account Ledger Engine
             </button>
-          </>
-        )}
 
-        {userRole === 'ADMIN' && (
-          <>
-            <button
-              onClick={() => setViewMode('APPROVER_QUEUE')}
-              style={{
-                padding: '8px 16px', borderRadius: 8, border: 'none',
-                background: viewMode === 'APPROVER_QUEUE' ? '#059669' : 'transparent',
-                color: viewMode === 'APPROVER_QUEUE' ? '#fff' : '#94a3b8',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
-              }}
-            >
-              <Clock size={16} /> Approvals Queue ({pendingApprovalsList.length})
-            </button>
-            <button
-              onClick={() => setViewMode('LEDGER')}
-              style={{
-                padding: '8px 16px', borderRadius: 8, border: 'none',
-                background: viewMode === 'LEDGER' ? '#0284c7' : 'transparent',
-                color: viewMode === 'LEDGER' ? '#fff' : '#94a3b8',
-                fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
-              }}
-            >
-              <Layers size={16} /> Account Ledger Engine
-            </button>
             <button
               onClick={() => setViewMode('SETUP')}
               style={{
@@ -680,7 +616,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
-              <Settings size={16} /> Maintenance & Master Setup
+              <Settings size={16} /> Master Setup
             </button>
           </>
         )}

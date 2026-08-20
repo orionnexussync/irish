@@ -1045,9 +1045,6 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
           <button className={activeTab === 'COMPANIES' ? 'active' : ''} onClick={() => setActiveTab('COMPANIES')}>
             <Building size={18} /> Company Connections
           </button>
-          <button className={activeTab === 'PETTY_CASH' ? 'active' : ''} onClick={() => setActiveTab('PETTY_CASH')}>
-            <DollarSign size={18} style={{ color: '#10b981' }} /> Petty Cash Approver Portal
-          </button>
         </nav>
 
         {onLockAdmin && (
