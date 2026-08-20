@@ -22,23 +22,41 @@ export function App() {
     setCustomBgColor(colorHex);
     localStorage.setItem('rfap_bg_color', colorHex);
 
-    const hex = colorHex.replace('#', '');
+    let hex = colorHex.replace('#', '');
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
     const r = parseInt(hex.substring(0, 2), 16) || 0;
     const g = parseInt(hex.substring(2, 4), 16) || 0;
     const b = parseInt(hex.substring(4, 6), 16) || 0;
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     const isLight = brightness > 155;
 
+    // Derived surface color (for sidebar, navbar, and input controls)
+    const surfaceR = isLight ? Math.min(255, r + 10) : Math.max(0, Math.round(r * 0.82));
+    const surfaceG = isLight ? Math.min(255, g + 10) : Math.max(0, Math.round(g * 0.82));
+    const surfaceB = isLight ? Math.min(255, b + 10) : Math.max(0, Math.round(b * 0.82));
+    const surfaceBg = `rgb(${surfaceR}, ${surfaceG}, ${surfaceB})`;
+
+    // Derived card background (for form cards, stat cards, & table containers)
+    const cardR = isLight ? 255 : Math.min(255, Math.round(r * 1.25) + 12);
+    const cardG = isLight ? 255 : Math.min(255, Math.round(g * 1.25) + 12);
+    const cardB = isLight ? 255 : Math.min(255, Math.round(b * 1.25) + 12);
+    const cardBg = isLight ? '#ffffff' : `rgba(${cardR}, ${cardG}, ${cardB}, 0.75)`;
+    const cardBorder = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.18)';
+
     const textColor = isLight ? '#0f172a' : '#ffffff';
-    const subTextColor = isLight ? '#475569' : '#a1a1aa';
-    const cardBg = isLight ? '#ffffff' : 'rgba(18, 18, 21, 0.95)';
+    const subTextColor = isLight ? '#475569' : '#cbd5e1';
 
     document.documentElement.style.setProperty('--app-bg', colorHex);
+    document.documentElement.style.setProperty('--app-surface-bg', surfaceBg);
+    document.documentElement.style.setProperty('--app-card-bg', cardBg);
+    document.documentElement.style.setProperty('--app-card-border', cardBorder);
     document.documentElement.style.setProperty('--bg-black', colorHex);
+    document.documentElement.style.setProperty('--bg-dark-surface', surfaceBg);
+    document.documentElement.style.setProperty('--bg-dark-card', cardBg);
     document.documentElement.style.setProperty('--text-white', textColor);
     document.documentElement.style.setProperty('--text-gray', subTextColor);
-    document.documentElement.style.setProperty('--bg-dark-surface', cardBg);
-    document.documentElement.style.setProperty('--bg-dark-card', cardBg);
 
     if (document.body) {
       document.body.style.backgroundColor = colorHex;

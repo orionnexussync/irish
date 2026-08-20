@@ -5,10 +5,14 @@
    ============================================================================= */
 :root {
   --app-bg: #000000;
+  --app-surface-bg: #09090b;
+  --app-card-bg: #121215;
+  --app-card-border: rgba(255, 255, 255, 0.1);
+
   --bg-black: var(--app-bg);
-  --bg-dark-surface: #121215;
-  --bg-dark-card: #18181b;
-  --bg-avatar: #18181b;
+  --bg-dark-surface: var(--app-surface-bg);
+  --bg-dark-card: var(--app-card-bg);
+  --bg-avatar: var(--app-surface-bg);
 
   --border-subtle: rgba(255, 255, 255, 0.1);
   --border-light: rgba(255, 255, 255, 0.18);
@@ -53,19 +57,20 @@ html, body {
 }
 
 /* =============================================================================
-   SEAMLESS PITCH-BLACK TOP NAVBAR
+   SEAMLESS TOP NAVBAR
    ============================================================================= */
 .top-navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.9rem 1.25rem;
-  background: var(--app-bg, #000000);
+  background: var(--app-surface-bg, #000000);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
   z-index: 100;
   gap: 0.75rem;
+  transition: background-color 0.3s ease;
 }
 
 .brand-title {
@@ -78,7 +83,7 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #18181b;
+  background: var(--app-card-bg, #18181b);
   border: 1px solid var(--border-light);
   display: flex;
   align-items: center;
@@ -108,7 +113,7 @@ html, body {
 
 .nav-mode-switcher {
   display: flex;
-  background: #121215;
+  background: var(--app-card-bg, #121215);
   padding: 3px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
@@ -140,7 +145,7 @@ html, body {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: #121215;
+  background: var(--app-card-bg, #121215);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
   color: #38bdf8;
@@ -160,7 +165,7 @@ html, body {
 }
 
 .branch-select-pill select option {
-  background: #121215;
+  background: var(--app-surface-bg, #121215);
   color: #ffffff;
 }
 
@@ -172,14 +177,15 @@ html, body {
   display: flex;
   justify-content: center;
   width: 100%;
-  background: #000000;
+  background: var(--app-bg, #000000);
   padding: 0;
+  transition: background-color 0.3s ease;
 }
 
 .kiosk-card.minimal-ios-card {
   width: 100%;
   max-width: 480px;
-  background: #000000;
+  background: var(--app-bg, #000000);
   border: none;
   border-radius: 0;
   padding: 1rem 1.25rem 2rem 1.25rem;
@@ -791,16 +797,18 @@ html, body {
   display: flex;
   flex: 1;
   min-height: calc(100vh - 65px);
-  background: #000000;
+  background: var(--app-bg, #000000);
+  transition: background-color 0.3s ease;
 }
 
 .admin-sidebar {
   width: 260px;
-  background: #09090b;
+  background: var(--app-surface-bg, #09090b);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   padding: 1.25rem 0.75rem;
+  transition: background-color 0.3s ease;
 }
 
 .sidebar-brand {
@@ -811,7 +819,7 @@ html, body {
   font-family: 'Outfit', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -839,8 +847,8 @@ html, body {
 }
 
 .sidebar-menu button:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-white, #ffffff);
 }
 
 .sidebar-menu button.active {
@@ -853,7 +861,8 @@ html, body {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
-  background: #000000;
+  background: var(--app-bg, #000000);
+  transition: background-color 0.3s ease;
 }
 
 .dashboard-stats-grid {
@@ -864,13 +873,14 @@ html, body {
 }
 
 .stat-card {
-  background: #09090b;
+  background: var(--app-card-bg, #09090b);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: background-color 0.3s ease;
 }
 
 .stat-label {
@@ -883,7 +893,7 @@ html, body {
   font-family: 'Outfit', sans-serif;
   font-size: 2.2rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
 }
 
 .stat-card.alert {
@@ -910,13 +920,13 @@ html, body {
 }
 
 .data-table th {
-  background: #09090b;
+  background: var(--app-surface-bg, #09090b);
   color: var(--text-gray);
   font-weight: 700;
 }
 
 .data-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .status-pill {
@@ -938,10 +948,11 @@ html, body {
 
 /* Forms */
 .form-card {
-  background: #09090b;
+  background: var(--app-card-bg, #09090b);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 1.75rem;
+  transition: background-color 0.3s ease;
 }
 
 .grid-form {
@@ -968,10 +979,10 @@ html, body {
 
 .form-group input, .form-group select {
   padding: 10px 14px;
-  background: #121215;
+  background: var(--app-surface-bg, #121215);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  color: #ffffff;
+  color: var(--text-white, #ffffff);
   font-family: inherit;
   font-size: 0.85rem;
   outline: none;
