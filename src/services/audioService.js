@@ -1,4 +1,4 @@
-// Audio Speech & Sound Feedback Service for Kiosk System
+// Human Voiceover Audio & Sound Feedback Service for Kiosk & Mobile APK System
 
 class AudioService {
   constructor() {
@@ -23,7 +23,27 @@ class AudioService {
     }
   }
 
-  speak(text) {
+  // Get best natural human-sounding voice available
+  getBestVoice() {
+    if (!this.synth) return null;
+    const voices = this.cachedVoices.length > 0 ? this.cachedVoices : (this.synth.getVoices() || []);
+    if (!voices || voices.length === 0) return null;
+
+    // 1. Check for modern Neural / Natural voices (Edge, Windows, Google, Safari)
+    const naturalVoice = voices.find(v =>
+      (v.name && (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Online') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Aria'))) &&
+      v.lang && (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB') || v.lang.startsWith('en-IN') || v.lang.startsWith('en'))
+    );
+    if (naturalVoice) return naturalVoice;
+
+    // 2. Check for any standard English voice
+    const enVoice = voices.find(v => v.lang && (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB') || v.lang.startsWith('en')));
+    if (enVoice) return enVoice;
+
+    return voices[0] || null;
+  }
+
+  speak(text, options = {}) {
     if (!text || !this.speechEnabled) return;
 
     if (!this.synth) {
@@ -44,32 +64,79 @@ class AudioService {
       setTimeout(() => {
         try {
           const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 0.95;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
+          utterance.rate = options.rate || 0.95; // slightly relaxed for natural human cadence
+          utterance.pitch = options.pitch || 1.0;
+          utterance.volume = options.volume || 1.0;
 
-          // Select preferred voice
-          const voices = this.cachedVoices.length > 0 ? this.cachedVoices : (this.synth.getVoices() || []);
-          const enVoice = voices.find(v => v.lang && (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB') || v.lang.startsWith('en')));
-          if (enVoice) {
-            utterance.voice = enVoice;
+          const voice = this.getBestVoice();
+          if (voice) {
+            utterance.voice = voice;
           }
 
           this.synth.speak(utterance);
         } catch (innerErr) {
           console.warn('SpeechSynthesisUtterance inner error:', innerErr);
         }
-      }, 50);
+      }, 60);
     } catch (e) {
       console.warn('Speech synthesis error:', e);
     }
+  }
+
+  // Dedicated Check-In Human Voiceover
+  playCheckInVoiceover(firstName, shiftName) {
+    const name = firstName || 'there';
+    const shift = shiftName ? `for ${shiftName}` : '';
+    const message = `Thank you, ${name}. You have successfully checked in ${shift}. Have a productive day!`;
+    this.playBeep('success');
+    this.speak(message, { rate: 0.95 });
+  }
+
+  // Dedicated Check-Out Human Voiceover
+  playCheckOutVoiceover(firstName, shiftName) {
+    const name = firstName || 'there';
+    const shift = shiftName ? `from ${shiftName}` : '';
+    const message = `Thank you, ${name}. You have successfully checked out ${shift}. Have a wonderful evening!`;
+    this.playBeep('success');
+    this.speak(message, { rate: 0.95 });
+  }
+
+  // Dedicated Attendance Regularization Human Voiceover
+  playRegularizationVoiceover(action = 'SUBMITTED', firstName = '') {
+    let message = 'Attendance regularization request submitted successfully. It has been routed to your branch manager for approval.';
+    if (action === 'APPROVED') {
+      message = 'Attendance regularization has been approved successfully.';
+    } else if (action === 'REJECTED') {
+      message = 'Attendance regularization request was rejected.';
+    }
+    this.playBeep(action === 'REJECTED' ? 'error' : 'success');
+    this.speak(message, { rate: 0.95 });
+  }
+
+  // Dedicated Petty Cash Human Voiceover
+  playPettyCashVoiceover(amount, action = 'SUBMITTED') {
+    const amountStr = amount ? `for rupees ${Number(amount).toLocaleString('en-IN')}` : '';
+    let message = `Petty cash expense claim ${amountStr} has been submitted successfully and is awaiting manager approval.`;
+
+    if (action === 'APPROVED_L1') {
+      message = 'Petty cash claim approved at Level 1, and routed to Superior Manager for final review.';
+    } else if (action === 'APPROVED') {
+      message = 'Petty cash expense claim has been successfully approved and completed.';
+    } else if (action === 'REJECTED') {
+      message = 'Petty cash expense claim was rejected.';
+    } else if (action === 'SEND_BACK') {
+      message = 'Petty cash expense claim was sent back for revision.';
+    }
+
+    this.playBeep(action === 'REJECTED' ? 'error' : 'success');
+    this.speak(message, { rate: 0.95 });
   }
 
   notify(text, type = 'alert') {
     if (!text) return;
     const cleanText = String(text)
       .replace(/<[^>]*>?/gm, '')
-      .replace(/[🚨✅🔄📋]/g, '')
+      .replace(/[🚨✅🔄📋💵⏳]/g, '')
       .trim();
 
     const lower = cleanText.toLowerCase();
@@ -124,24 +191,9 @@ class AudioService {
         osc.stop(audioCtx.currentTime + 0.3);
       }
     } catch (e) {
-      console.warn('AudioContext error:', e);
+      console.warn('Audio tone error:', e);
     }
   }
 }
 
 export const audioService = new AudioService();
-
-// Global Interceptor: Trigger automatic audio voiceover for system window.alert calls
-if (typeof window !== 'undefined') {
-  const nativeAlert = window.alert;
-  window.alert = function (message) {
-    try {
-      if (message) {
-        audioService.notify(message);
-      }
-    } catch (e) {
-      console.warn('Audio alert voiceover error:', e);
-    }
-    return nativeAlert.apply(window, arguments);
-  };
-}

@@ -273,9 +273,8 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
         setMatchConfidence(94);
         setScanningStatus('Request Submitted');
         setScanFeedback({ type: 'success', text: `Regularization request submitted to Admin!` });
-        audioService.playBeep('success');
-        audioService.speak('Regularization request submitted successfully');
-        setTimeout(() => closeCameraScan(), 2200);
+        audioService.playRegularizationVoiceover('SUBMITTED', regEmpId);
+        setTimeout(() => closeCameraScan(), 2600);
       } catch (err) {
         setScanFeedback({ type: 'error', text: err.message });
       }
@@ -539,12 +538,16 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
       const msg = `SUCCESSFULLY ${actionStr.toUpperCase()} FOR ${activeShift ? activeShift.shift_name.toUpperCase() : 'SHIFT'}`;
 
       setScanFeedback({ type: 'success', text: `${matchedEmp.first_name} ${matchedEmp.last_name}: ${msg}` });
-      audioService.playBeep('success');
-      audioService.speak(`${matchedEmp.first_name}, successfully ${actionStr}`);
+
+      if (type === 'CHECK_IN') {
+        audioService.playCheckInVoiceover(matchedEmp.first_name, activeShift ? activeShift.shift_name : '');
+      } else {
+        audioService.playCheckOutVoiceover(matchedEmp.first_name, activeShift ? activeShift.shift_name : '');
+      }
 
       confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
       await loadData();
-      setTimeout(() => closeCameraScan(), 2500);
+      setTimeout(() => closeCameraScan(), 2600);
     } catch (err) {
       // Fallback offline queue if network request throws error
       api.saveOfflinePunch(punchPayload);
@@ -554,9 +557,12 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
         type: 'success',
         text: `${matchedEmp.first_name} ${matchedEmp.last_name}: Punch saved offline due to network timeout. Will auto-sync when online.`
       });
-      audioService.playBeep('success');
-      audioService.speak(`${matchedEmp.first_name}, punch saved offline.`);
-      setTimeout(() => closeCameraScan(), 2500);
+      if (type === 'CHECK_IN') {
+        audioService.playCheckInVoiceover(matchedEmp.first_name, activeShift ? activeShift.shift_name : '');
+      } else {
+        audioService.playCheckOutVoiceover(matchedEmp.first_name, activeShift ? activeShift.shift_name : '');
+      }
+      setTimeout(() => closeCameraScan(), 2600);
     }
   };
 

@@ -370,6 +370,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
       loadPettyCashData();
       setViewMode('DASHBOARD');
+      audioService.playPettyCashVoiceover(savedClaim.amount, 'SUBMITTED');
       alert(`✅ Expense Claim ${savedClaim.claim_no} submitted successfully!`);
     } catch (err) {
       alert('Error submitting claim: ' + err.message);
