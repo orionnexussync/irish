@@ -524,19 +524,19 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--app-bg, #000000)', color: 'var(--text-white, #ffffff)', minHeight: '100vh' }}>
       
       {/* TOP PORTAL ROLE & NAVIGATION BAR */}
-      <div style={{ background: 'var(--app-surface-bg, #0f172a)', borderBottom: '1px solid var(--border-subtle)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ background: 'var(--app-surface-bg)', borderBottom: '1px solid var(--border-subtle)', padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={onBackToAdmin}
             className="branch-select-pill"
-            style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid var(--border-subtle)', padding: '6px 12px', whiteSpace: 'nowrap' }}
+            style={{ cursor: 'pointer', background: 'var(--app-card-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', padding: '6px 12px', whiteSpace: 'nowrap' }}
           >
             <ArrowLeft size={16} /> <span>Back</span>
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <DollarSign size={24} style={{ color: '#10b981' }} />
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif', color: 'var(--text-white)' }}>
                 {activePlatformMode === 'MOBILE_INITIATOR' ? '📱 PETTY CASH INITIATOR (MOBILE APK)' : '🖥️ PETTY CASH APPROVER PORTAL (WEB APP)'}
               </h2>
               <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 700, letterSpacing: '0.08em' }}>
@@ -548,7 +548,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
       </div>
 
       {/* SECONDARY NAVIGATION MENU BAR */}
-      <div style={{ background: 'var(--app-card-bg, #1e293b)', borderBottom: '1px solid var(--border-subtle)', padding: '0.5rem 1.25rem', display: 'flex', gap: 10, overflowX: 'auto' }}>
+      <div style={{ background: 'var(--app-card-bg)', borderBottom: '1px solid var(--border-subtle)', padding: '0.5rem 1.25rem', display: 'flex', gap: 10, overflowX: 'auto' }}>
         
         {/* INITIATOR MENU TABS (MOBILE APK ONLY) */}
         {activePlatformMode === 'MOBILE_INITIATOR' && isBiometricVerified && (
@@ -558,7 +558,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'DASHBOARD' ? '#0284c7' : 'transparent',
-                color: viewMode === 'DASHBOARD' ? '#fff' : '#94a3b8',
+                color: viewMode === 'DASHBOARD' ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -569,7 +569,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'CLAIM_ENTRY' ? '#0284c7' : 'transparent',
-                color: viewMode === 'CLAIM_ENTRY' ? '#fff' : '#94a3b8',
+                color: viewMode === 'CLAIM_ENTRY' ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -582,7 +582,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               }}
               style={{
                 padding: '8px 14px', borderRadius: 8, border: '1px solid #ef4444',
-                background: 'rgba(239, 68, 68, 0.15)', color: '#f87171',
+                background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', marginLeft: 'auto'
               }}
             >
@@ -602,7 +602,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: (userRole === 'APPROVER_L1' && viewMode === 'APPROVER_QUEUE') ? '#059669' : 'transparent',
-                color: (userRole === 'APPROVER_L1' && viewMode === 'APPROVER_QUEUE') ? '#fff' : '#94a3b8',
+                color: (userRole === 'APPROVER_L1' && viewMode === 'APPROVER_QUEUE') ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -617,7 +617,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: (userRole === 'APPROVER_L2' && viewMode === 'APPROVER_QUEUE') ? '#7c3aed' : 'transparent',
-                color: (userRole === 'APPROVER_L2' && viewMode === 'APPROVER_QUEUE') ? '#fff' : '#94a3b8',
+                color: (userRole === 'APPROVER_L2' && viewMode === 'APPROVER_QUEUE') ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -629,7 +629,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'LEDGER' ? '#0284c7' : 'transparent',
-                color: viewMode === 'LEDGER' ? '#fff' : '#94a3b8',
+                color: viewMode === 'LEDGER' ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -641,7 +641,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               style={{
                 padding: '8px 16px', borderRadius: 8, border: 'none',
                 background: viewMode === 'SETUP' ? '#d97706' : 'transparent',
-                color: viewMode === 'SETUP' ? '#fff' : '#94a3b8',
+                color: viewMode === 'SETUP' ? '#ffffff' : 'var(--text-gray)',
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
@@ -764,12 +764,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ fontWeight: 700 }}>
+                      <td style={{ fontWeight: 700, color: 'var(--text-white)' }}>
                         {projects.find(p => String(p.project_id) === String(claimForm.project_id))?.project_name || 'Orion'}
                       </td>
-                      <td>Downtown HQ (#001)</td>
+                      <td style={{ color: 'var(--text-white)' }}>Downtown HQ (#001)</td>
                       <td style={{ color: '#0284c7', fontWeight: 700 }}>₹ {metrics.opening_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ color: '#f59e0b', fontWeight: 700 }}>₹ {metrics.claim_raised.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#d97706', fontWeight: 700 }}>₹ {metrics.claim_raised.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td style={{ color: '#10b981', fontWeight: 800, fontSize: '1rem' }}>₹ {metrics.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   </tbody>
@@ -780,8 +780,8 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             {/* MY RECENT CLAIMS TABLE */}
             <div className="form-card" style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>My Recent Claims</h4>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-gray, #94a3b8)' }}>Total Claims: {claims.length}</span>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-white)' }}>My Recent Claims</h4>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-gray)' }}>Total Claims: {claims.length}</span>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table className="data-table">
@@ -796,21 +796,21 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </thead>
                   <tbody>
                     {claims.map((c) => {
-                      let statusBg = 'rgba(255, 255, 255, 0.1)';
-                      let statusColor = '#fff';
+                      let statusBg = 'rgba(2, 132, 199, 0.15)';
+                      let statusColor = '#0284c7';
                       if (c.current_status === 'Approved') { statusBg = 'rgba(16, 185, 129, 0.2)'; statusColor = '#10b981'; }
-                      else if (c.current_status === 'In-Progress') { statusBg = 'rgba(245, 158, 11, 0.2)'; statusColor = '#f59e0b'; }
-                      else if (c.current_status === 'Send Back') { statusBg = 'rgba(234, 179, 8, 0.2)'; statusColor = '#eab308'; }
+                      else if (c.current_status === 'In-Progress') { statusBg = 'rgba(245, 158, 11, 0.2)'; statusColor = '#d97706'; }
+                      else if (c.current_status === 'Send Back') { statusBg = 'rgba(234, 179, 8, 0.2)'; statusColor = '#d97706'; }
                       else if (c.current_status === 'Pending') { statusBg = 'rgba(56, 189, 248, 0.2)'; statusColor = '#0284c7'; }
-                      else if (c.current_status === 'Rejected') { statusBg = 'rgba(239, 68, 68, 0.2)'; statusColor = '#ef4444'; }
+                      else if (c.current_status === 'Rejected') { statusBg = 'rgba(239, 68, 68, 0.2)'; statusColor = '#dc2626'; }
 
                       const catObj = categories.find(cat => cat.category_code === c.category_code);
 
                       return (
                         <tr key={c.claim_no}>
                           <td style={{ fontWeight: 700, fontFamily: 'monospace', color: '#0284c7' }}>{c.claim_no}</td>
-                          <td>{catObj ? catObj.category_name : c.category_code}</td>
-                          <td style={{ fontWeight: 700 }}>₹ {Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ color: 'var(--text-white)' }}>{catObj ? catObj.category_name : c.category_code}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--text-white)' }}>₹ {Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td>
                             <span style={{ padding: '4px 10px', borderRadius: 9999, background: statusBg, color: statusColor, fontSize: '0.75rem', fontWeight: 800 }}>
                               {c.current_status}
@@ -819,7 +819,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                           <td>
                             <button
                               onClick={() => handleEditClaim(c)}
-                              style={{ padding: '4px 10px', background: 'var(--app-surface-bg, #0f172a)', color: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem' }}
+                              style={{ padding: '4px 10px', background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
                             >
                               {c.current_status === 'Send Back' ? '✏️ Edit & Resubmit' : '👁️ View'}
                             </button>
@@ -830,7 +830,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                     {claims.length === 0 && (
                       <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-gray)' }}>
                           No expense claims submitted yet. Click [Raise Expense] to create your first claim!
                         </td>
                       </tr>
@@ -854,7 +854,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               >
                 &lt; Back to Dashboard
               </button>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-white)' }}>
                 {selectedClaim ? `EDIT CLAIM: ${selectedClaim.claim_no}` : 'PETTY CASH CLAIM ENTRY'}
               </h3>
             </div>
@@ -863,7 +863,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               <form onSubmit={handleSubmitClaim} className="grid-form">
                 
                 <div className="form-group">
-                  <label>Project*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Project*</label>
                   <select
                     value={claimForm.project_id}
                     onChange={(e) => setClaimForm({ ...claimForm, project_id: e.target.value })}
@@ -877,7 +877,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 <div className="form-group">
-                  <label>Branch*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Branch*</label>
                   <select
                     value={claimForm.branch_id}
                     onChange={(e) => setClaimForm({ ...claimForm, branch_id: e.target.value })}
@@ -889,15 +889,15 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </select>
                 </div>
 
-                <div className="form-group full-width" style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 12, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--text-gray, #94a3b8)' }}>Current Month Balance (Auto-calculated):</span>
+                <div className="form-group full-width" style={{ background: 'var(--app-surface-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-gray)' }}>Current Month Balance (Auto-calculated):</span>
                   <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#10b981' }}>
                     ₹ {metrics.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Date of Expense*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Date of Expense*</label>
                   <input
                     type="date"
                     max={new Date().toISOString().split('T')[0]}
@@ -908,7 +908,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 <div className="form-group">
-                  <label>Category*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Category*</label>
                   <select
                     value={claimForm.category_code}
                     onChange={(e) => setClaimForm({ ...claimForm, category_code: e.target.value })}
@@ -929,7 +929,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 <div className="form-group">
-                  <label>Invoice / Bill No*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Invoice / Bill No*</label>
                   <input
                     type="text"
                     placeholder="e.g. INV-882910"
@@ -940,7 +940,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 <div className="form-group">
-                  <label>Amount (Rs.)*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Amount (Rs.)*</label>
                   <input
                     type="number"
                     step="0.01"
@@ -952,27 +952,27 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 <div className="form-group full-width">
-                  <label>Reasons / Remarks*</label>
+                  <label style={{ color: 'var(--text-gray)' }}>Reasons / Remarks*</label>
                   <textarea
                     rows={3}
                     placeholder="Enter details about transportation, material, or bill details..."
                     value={claimForm.reasons}
                     onChange={(e) => setClaimForm({ ...claimForm, reasons: e.target.value })}
                     required
-                    style={{ padding: 10, background: 'var(--app-surface-bg, #0f172a)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                    style={{ padding: 10, background: 'var(--app-surface-bg)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: 'var(--text-white)' }}
                   />
                 </div>
 
                 <div className="form-group full-width">
-                  <label>File Attachment (PDF, Word, JPEG, PNG ≤ 5MB)</label>
+                  <label style={{ color: 'var(--text-gray)' }}>File Attachment (PDF, Word, JPEG, PNG ≤ 5MB)</label>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <input
                       type="text"
                       readOnly
                       value={claimForm.attachment_name || 'No file selected'}
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, background: 'var(--app-surface-bg)', color: 'var(--text-white)' }}
                     />
-                    <label style={{ padding: '9px 14px', background: '#334155', color: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <label style={{ padding: '9px 14px', background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-light)', borderRadius: 6, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Upload size={14} /> Choose File
                       <input
                         type="file"
@@ -990,17 +990,17 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                 {/* READ-ONLY APPROVER AUDIT BOX */}
                 {selectedClaim && (
-                  <div className="form-group full-width" style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 14, borderRadius: 8, border: '1px solid var(--border-subtle)', marginTop: 8 }}>
+                  <div className="form-group full-width" style={{ background: 'var(--app-surface-bg)', padding: 14, borderRadius: 8, border: '1px solid var(--border-subtle)', marginTop: 8 }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
                       READ-ONLY APPROVER AUDIT
                     </span>
-                    <div style={{ marginTop: 8, fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ marginTop: 8, fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 6, color: 'var(--text-white)' }}>
                       {currentClaimHistory.map((h, i) => (
-                        <div key={i} style={{ borderBottom: '1px borderless #334155', paddingBottom: 4 }}>
-                          <strong>{h.approval_level} ({h.approver_name}):</strong> <span style={{ color: '#f59e0b' }}>[{h.action_taken}]</span> {h.remarks || 'No comments'}
+                        <div key={i} style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: 4 }}>
+                          <strong>{h.approval_level} ({h.approver_name}):</strong> <span style={{ color: '#d97706' }}>[{h.action_taken}]</span> {h.remarks || 'No comments'}
                         </div>
                       ))}
-                      {currentClaimHistory.length === 0 && <span style={{ color: '#94a3b8' }}>No approver actions logged yet.</span>}
+                      {currentClaimHistory.length === 0 && <span style={{ color: 'var(--text-gray)' }}>No approver actions logged yet.</span>}
                     </div>
                   </div>
                 )}
@@ -1030,7 +1030,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   <button
                     type="button"
                     onClick={() => setViewMode('DASHBOARD')}
-                    style={{ flex: 1, padding: 12, background: '#334155', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ flex: 1, padding: 12, background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-light)', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
                   >
                     ❌ CLOSE
                   </button>
@@ -1046,10 +1046,10 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
            ========================================================================= */}
         {showHistoryModal && selectedClaim && (
           <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <div className="modal-card" style={{ background: '#1e293b', color: '#fff', borderRadius: 16, padding: 24, maxWidth: 680, width: '100%', border: '1px solid #0284c7' }}>
+            <div className="modal-card" style={{ background: 'var(--app-card-bg)', color: 'var(--text-white)', borderRadius: 16, padding: 24, maxWidth: 680, width: '100%', border: '1.5px solid var(--border-light)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 18 }}>APPROVAL STATUS HISTORY</h3>
-                <button onClick={() => setShowHistoryModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <h3 style={{ margin: 0, fontSize: 18, color: 'var(--text-white)' }}>APPROVAL STATUS HISTORY</h3>
+                <button onClick={() => setShowHistoryModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-gray)', cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
               </div>
@@ -1073,21 +1073,21 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   <tbody>
                     {currentClaimHistory.map((h, index) => (
                       <tr key={index}>
-                        <td>{String(index + 1).padStart(2, '0')}</td>
-                        <td>{h.action_timestamp}</td>
-                        <td>{h.approver_name} ({h.approver_id})</td>
-                        <td>{h.approval_level}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{String(index + 1).padStart(2, '0')}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{h.action_timestamp}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{h.approver_name} ({h.approver_id})</td>
+                        <td style={{ color: 'var(--text-white)' }}>{h.approval_level}</td>
                         <td>
                           <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(56,189,248,0.2)', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700 }}>
                             {h.action_taken}
                           </span>
                         </td>
-                        <td>{h.remarks || '-'}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{h.remarks || '-'}</td>
                       </tr>
                     ))}
                     {currentClaimHistory.length === 0 && (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>No approval history recorded.</td>
+                        <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-gray)' }}>No approval history recorded.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1096,7 +1096,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
               <button
                 onClick={() => setShowHistoryModal(false)}
-                style={{ width: '100%', padding: 10, background: '#334155', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
+                style={{ width: '100%', padding: 10, background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-light)', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
               >
                 ❌ Close
               </button>
@@ -1111,8 +1111,8 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Petty Cash Approver Portal</h3>
-                <span style={{ fontSize: '0.82rem', color: userRole === 'APPROVER_L1' ? '#10b981' : '#c084fc', fontWeight: 700 }}>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-white)' }}>Petty Cash Approver Portal</h3>
+                <span style={{ fontSize: '0.82rem', color: userRole === 'APPROVER_L1' ? '#10b981' : '#7c3aed', fontWeight: 700 }}>
                   {userRole === 'APPROVER_L1'
                     ? 'Active Queue: Approver 01 (Respective Manager - Mandatory)'
                     : 'Active Queue: Approver 02 (Superior Manager - Conditional/Optional)'}
@@ -1122,7 +1122,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 <div style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 14px', borderRadius: 9999, fontWeight: 800, fontSize: '0.82rem' }}>
                   L1 Pending: {l1PendingClaims.length}
                 </div>
-                <div style={{ background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', padding: '6px 14px', borderRadius: 9999, fontWeight: 800, fontSize: '0.82rem' }}>
+                <div style={{ background: 'rgba(124, 58, 237, 0.2)', border: '1px solid #7c3aed', color: '#7c3aed', padding: '6px 14px', borderRadius: 9999, fontWeight: 800, fontSize: '0.82rem' }}>
                   L2 Pending: {l2PendingClaims.length}
                 </div>
               </div>
@@ -1156,32 +1156,32 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                         <tr key={c.claim_no}>
                           <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>{c.claim_no}</td>
                           <td>
-                            <strong>{c.emp_name || c.emp_id}</strong>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>{c.emp_id}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>🏢 {branchName}</div>
+                            <strong style={{ color: 'var(--text-white)' }}>{c.emp_name || c.emp_id}</strong>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-gray)', fontFamily: 'monospace' }}>{c.emp_id}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#0284c7' }}>🏢 {branchName}</div>
                           </td>
                           <td>
-                            <div><strong>{projectObj ? projectObj.project_name : 'Orion'}</strong></div>
-                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{catObj ? catObj.category_name : c.category_code}</div>
+                            <div><strong style={{ color: 'var(--text-white)' }}>{projectObj ? projectObj.project_name : 'Orion'}</strong></div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-gray)' }}>{catObj ? catObj.category_name : c.category_code}</div>
                           </td>
                           <td style={{ fontWeight: 800, color: '#10b981' }}>₹ {Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td>
                             {userRole === 'APPROVER_L1' ? (
                               <div>
-                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 800 }}>
+                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: '#d97706', fontSize: '0.75rem', fontWeight: 800 }}>
                                   ⏳ Pending Approver 01
                                 </span>
-                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
-                                  Respective Mgr: <strong>{claimBranch ? (claimBranch.manager_name || claimBranch.respective_manager_id) : 'Branch Mgr'}</strong>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-gray)', marginTop: 4 }}>
+                                  Respective Mgr: <strong style={{ color: 'var(--text-white)' }}>{claimBranch ? (claimBranch.manager_name || claimBranch.respective_manager_id) : 'Branch Mgr'}</strong>
                                 </div>
                               </div>
                             ) : (
                               <div>
-                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(192,132,252,0.2)', color: '#c084fc', fontSize: '0.75rem', fontWeight: 800 }}>
+                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(124, 58, 237, 0.2)', color: '#7c3aed', fontSize: '0.75rem', fontWeight: 800 }}>
                                   ⏳ Pending Approver 02
                                 </span>
-                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
-                                  Superior Mgr: <strong>{claimBranch ? (claimBranch.superior_manager_name || claimBranch.superior_manager_id) : 'Superior Mgr'}</strong>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-gray)', marginTop: 4 }}>
+                                  Superior Mgr: <strong style={{ color: 'var(--text-white)' }}>{claimBranch ? (claimBranch.superior_manager_name || claimBranch.superior_manager_id) : 'Superior Mgr'}</strong>
                                 </div>
                               </div>
                             )}
@@ -1203,7 +1203,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                     {pendingApprovalsList.length === 0 && (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-gray)' }}>
                           🎉 No pending claims awaiting your approval in this queue!
                         </td>
                       </tr>
@@ -1231,14 +1231,14 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 >
                   &lt; Back to Approvals
                 </button>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>CLAIM REVIEW & APPROVAL MATRIX</h3>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-white)' }}>CLAIM REVIEW & APPROVAL MATRIX</h3>
               </div>
 
               <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                <div style={{ background: 'var(--app-surface-bg)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)', color: 'var(--text-white)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>Claim No: {selectedClaim.claim_no}</span>
-                    <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Raised By: <strong>{selectedClaim.emp_id}</strong></span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-gray)' }}>Raised By: <strong style={{ color: 'var(--text-white)' }}>{selectedClaim.emp_id}</strong></span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, fontSize: '0.85rem' }}>
                     <div>Assigned Branch: <strong>{claimBranch ? claimBranch.branch_name : 'MAIN'}</strong></div>
@@ -1249,25 +1249,25 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </div>
 
                   {/* BRANCH MANAGER APPROVAL MATRIX ROUTING DISPLAY */}
-                  <div style={{ marginTop: 12, padding: 12, background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.3)', borderRadius: 8, fontSize: '0.82rem' }}>
-                    <div style={{ color: '#38bdf8', fontWeight: 800, marginBottom: 4 }}>📋 Multi-Tier Approval Matrix Configuration:</div>
+                  <div style={{ marginTop: 12, padding: 12, background: 'rgba(2, 132, 199, 0.12)', border: '1px solid rgba(2, 132, 199, 0.35)', borderRadius: 8, fontSize: '0.82rem' }}>
+                    <div style={{ color: '#0284c7', fontWeight: 800, marginBottom: 4 }}>📋 Multi-Tier Approval Matrix Configuration:</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div>• <strong>Approver 01 (Respective Manager - Mandatory):</strong> <span style={{ color: '#38bdf8' }}>{claimBranch?.respective_manager_id ? `${claimBranch.respective_manager_id} - ${claimBranch.manager_name}` : (claimBranch?.manager_name || 'Assigned Branch Manager')}</span></div>
-                      <div>• <strong>Approver 02 (Superior Manager - Optional):</strong> <span style={{ color: '#c084fc' }}>{hasSuperiorManager ? `${claimBranch.superior_manager_id} - ${claimBranch.superior_manager_name}` : 'Not Configured (Single-Tier Direct Approval)'}</span></div>
+                      <div>• <strong>Approver 01 (Respective Manager - Mandatory):</strong> <span style={{ color: '#0284c7', fontWeight: 700 }}>{claimBranch?.respective_manager_id ? `${claimBranch.respective_manager_id} - ${claimBranch.manager_name}` : (claimBranch?.manager_name || 'Assigned Branch Manager')}</span></div>
+                      <div>• <strong>Approver 02 (Superior Manager - Optional):</strong> <span style={{ color: '#7c3aed', fontWeight: 700 }}>{hasSuperiorManager ? `${claimBranch.superior_manager_id} - ${claimBranch.superior_manager_name}` : 'Not Configured (Single-Tier Direct Approval)'}</span></div>
                     </div>
                   </div>
 
                   <div style={{ marginTop: 12, fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>
                     Claim Amount: ₹ {Number(selectedClaim.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
-                  <div style={{ marginTop: 8, fontSize: '0.85rem', color: '#cbd5e1' }}>
+                  <div style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--text-white)' }}>
                     Reason: {selectedClaim.reasons}
                   </div>
                   <div style={{ marginTop: 12 }}>
-                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Attachment: </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-gray)' }}>Attachment: </span>
                     <button
                       onClick={() => alert(`Opening receipt document: ${selectedClaim.attachment_path || 'receipt.pdf'}`)}
-                      style={{ padding: '4px 10px', background: '#334155', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                      style={{ padding: '4px 10px', background: 'var(--app-card-bg)', color: 'var(--text-white)', border: '1px solid var(--border-light)', borderRadius: 4, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
                     >
                       📄 View_Receipt.pdf
                     </button>
@@ -1275,13 +1275,13 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 </div>
 
                 {/* APPROVER DECISION SECTION */}
-                <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>
+                <div style={{ background: 'var(--app-surface-bg)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 800, color: '#d97706', textTransform: 'uppercase' }}>
                     {userRole === 'APPROVER_L1' ? 'APPROVER 01 (RESPECTIVE MANAGER) DECISION' : 'APPROVER 02 (SUPERIOR MANAGER) DECISION'}
                   </h4>
 
                   {/* Informative Workflow Alert */}
-                  <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 6, fontSize: '0.8rem', color: '#fcd34d', marginBottom: 14 }}>
+                  <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 6, fontSize: '0.8rem', color: 'var(--text-white)', marginBottom: 14 }}>
                     {userRole === 'APPROVER_L1' ? (
                       hasSuperiorManager
                         ? `ℹ️ Approving will advance this claim to Approver 02 (Superior Manager: ${claimBranch?.superior_manager_name || claimBranch?.superior_manager_id}).`
@@ -1292,13 +1292,13 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 16 }}>
-                    <label>Approver Remarks* (Mandatory for Reject & Send Back)</label>
+                    <label style={{ color: 'var(--text-gray)' }}>Approver Remarks* (Mandatory for Reject & Send Back)</label>
                     <textarea
                       rows={3}
                       placeholder="Enter approval, rejection, or send-back comments here..."
                       value={approverRemarks}
                       onChange={(e) => setApproverRemarks(e.target.value)}
-                      style={{ padding: 10, background: 'var(--app-card-bg, #1e293b)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                      style={{ padding: 10, background: 'var(--app-surface-bg)', border: '1px solid var(--border-light)', borderRadius: 6, color: 'var(--text-white)' }}
                     />
                   </div>
 
@@ -1334,29 +1334,29 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
         {viewMode === 'SETUP' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Maintenance & Master Setup Modules</h3>
+              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-white)' }}>Maintenance & Master Setup Modules</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={() => setSetupTab('MATRIX')}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'MATRIX' ? '#d97706' : '#334155', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'MATRIX' ? '#d97706' : 'var(--app-card-bg)', color: setupTab === 'MATRIX' ? '#fff' : 'var(--text-gray)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   Approval Matrix
                 </button>
                 <button
                   onClick={() => setSetupTab('CATEGORIES')}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'CATEGORIES' ? '#d97706' : '#334155', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'CATEGORIES' ? '#d97706' : 'var(--app-card-bg)', color: setupTab === 'CATEGORIES' ? '#fff' : 'var(--text-gray)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   Categories
                 </button>
                 <button
                   onClick={() => setSetupTab('PROJECTS')}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'PROJECTS' ? '#d97706' : '#334155', color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: setupTab === 'PROJECTS' ? '#d97706' : 'var(--app-card-bg)', color: setupTab === 'PROJECTS' ? '#fff' : 'var(--text-gray)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   Projects
                 </button>
                 <button
                   onClick={handleClearPettyCash}
-                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #ef4444', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   🗑️ Clear Petty Cash Data
                 </button>
@@ -1366,12 +1366,12 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             {/* TAB 1: APPROVAL MATRIX MAINTENANCE */}
             {setupTab === 'MATRIX' && (
               <div className="form-card" style={{ maxWidth: 640 }}>
-                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b' }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#d97706' }}>
                   ADMIN PORTAL &gt; Master Setup &gt; Approval Matrix Maintenance
                 </h4>
                 <form onSubmit={handleSaveMatrixRule} className="grid-form">
                   <div className="form-group">
-                    <label>Project Scope*</label>
+                    <label style={{ color: 'var(--text-gray)' }}>Project Scope*</label>
                     <select
                       value={matrixForm.project_scope}
                       onChange={(e) => setMatrixForm({ ...matrixForm, project_scope: e.target.value })}
@@ -1384,9 +1384,9 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </div>
 
                   <div className="form-group">
-                    <label>Amount Constraint*</label>
+                    <label style={{ color: 'var(--text-gray)' }}>Amount Constraint*</label>
                     <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-white)' }}>
                         <input
                           type="radio"
                           name="constraint"
@@ -1395,7 +1395,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                         />
                         Greater Than (&gt;)
                       </label>
-                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                      <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: 'var(--text-white)' }}>
                         <input
                           type="radio"
                           name="constraint"
@@ -1408,7 +1408,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </div>
 
                   <div className="form-group">
-                    <label>Threshold Value (Rupees)*</label>
+                    <label style={{ color: 'var(--text-gray)' }}>Threshold Value (Rupees)*</label>
                     <input
                       type="number"
                       value={matrixForm.threshold_value}
@@ -1418,7 +1418,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   </div>
 
                   <div className="form-group">
-                    <label>Target Approver*</label>
+                    <label style={{ color: 'var(--text-gray)' }}>Target Approver*</label>
                     <select
                       value={matrixForm.target_approver}
                       onChange={(e) => setMatrixForm({ ...matrixForm, target_approver: e.target.value })}
@@ -1432,7 +1432,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                     <button type="submit" style={{ padding: 10, background: '#0284c7', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>
                       💾 SUBMIT
                     </button>
-                    <button type="button" onClick={() => setMatrixForm({ project_scope: 'ALL', amount_constraint: 'GREATER_THAN', threshold_value: '5000.00', target_approver: 'Approver_L2' })} style={{ padding: 10, background: '#334155', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>
+                    <button type="button" onClick={() => setMatrixForm({ project_scope: 'ALL', amount_constraint: 'GREATER_THAN', threshold_value: '5000.00', target_approver: 'Approver_L2' })} style={{ padding: 10, background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-light)', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>
                       🔄 CLEAR
                     </button>
                   </div>
@@ -1443,16 +1443,16 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             {/* TAB 2: CATEGORY MAINTENANCE */}
             {setupTab === 'CATEGORIES' && (
               <div className="form-card">
-                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b' }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#d97706' }}>
                   ADMIN PORTAL &gt; Master Setup &gt; Categories Maintenance
                 </h4>
-                <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: 10, marginBottom: '1.5rem' }}>
+                <form onSubmit={handleAddCategory} style={{ display: 'flex', gap: 10, marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                   <input
                     type="text"
                     placeholder="New Category Name (e.g. Material Expense)"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    style={{ flex: 1, padding: 10, background: 'var(--app-surface-bg, #0f172a)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                    style={{ flex: 1, minWidth: 200 }}
                   />
                   <button type="submit" style={{ padding: '10px 20px', background: '#059669', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer' }}>
                     💾 SAVE CATEGORY
@@ -1472,17 +1472,17 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   <tbody>
                     {categories.map(cat => (
                       <tr key={cat.category_code}>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{cat.category_code}</td>
-                        <td>{cat.category_name}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>{cat.category_code}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{cat.category_name}</td>
                         <td>
-                          <span style={{ padding: '2px 8px', borderRadius: 4, background: cat.is_enabled ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: cat.is_enabled ? '#10b981' : '#ef4444', fontSize: '0.75rem', fontWeight: 700 }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 4, background: cat.is_enabled ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: cat.is_enabled ? '#10b981' : '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>
                             {cat.is_enabled ? 'Enabled' : 'Disabled'}
                           </span>
                         </td>
                         <td>
                           <button
                             onClick={() => handleToggleCategory(cat.category_code, !cat.is_enabled)}
-                            style={{ padding: '4px 10px', background: '#334155', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 10px', background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                           >
                             {cat.is_enabled ? '[ Disable Category ]' : '[ Enable Category ]'}
                           </button>
@@ -1492,7 +1492,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                     {categories.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>No categories created. Enter name above to save your first category!</td>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-gray)' }}>No categories created. Enter name above to save your first category!</td>
                       </tr>
                     )}
                   </tbody>
@@ -1503,21 +1503,21 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             {/* TAB 3: PROJECT MAINTENANCE */}
             {setupTab === 'PROJECTS' && (
               <div className="form-card">
-                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#f59e0b' }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#d97706' }}>
                   ADMIN PORTAL &gt; Master Setup &gt; Project Maintenance
                 </h4>
-                <form onSubmit={handleAddProject} style={{ display: 'flex', gap: 10, marginBottom: '1.5rem' }}>
+                <form onSubmit={handleAddProject} style={{ display: 'flex', gap: 10, marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                   <input
                     type="text"
                     placeholder="Project Name (e.g. NEXUS)"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
-                    style={{ flex: 1, padding: 10, background: 'var(--app-surface-bg, #0f172a)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                    style={{ flex: 1, minWidth: 180 }}
                   />
                   <select
                     value={newProjectBranchId}
                     onChange={(e) => setNewProjectBranchId(e.target.value)}
-                    style={{ padding: 10, background: 'var(--app-surface-bg, #0f172a)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                    style={{ minWidth: 160 }}
                   >
                     {branches.map(b => (
                       <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
@@ -1541,17 +1541,17 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   <tbody>
                     {projects.map((p, i) => (
                       <tr key={p.project_id}>
-                        <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>P{String(i + 1).padStart(3, '0')}</td>
-                        <td>{p.project_name}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>P{String(i + 1).padStart(3, '0')}</td>
+                        <td style={{ color: 'var(--text-white)' }}>{p.project_name}</td>
                         <td>
-                          <span style={{ padding: '2px 8px', borderRadius: 4, background: p.is_active ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: p.is_active ? '#10b981' : '#ef4444', fontSize: '0.75rem', fontWeight: 700 }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 4, background: p.is_active ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: p.is_active ? '#10b981' : '#dc2626', fontSize: '0.75rem', fontWeight: 700 }}>
                             {p.is_active ? 'Enabled' : 'Disabled'}
                           </span>
                         </td>
                         <td>
                           <button
                             onClick={() => handleToggleProject(p.project_id, !p.is_active)}
-                            style={{ padding: '4px 10px', background: '#334155', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 10px', background: 'var(--app-surface-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                           >
                             {p.is_active ? '[ Disable Project ]' : '[ Enable Project ]'}
                           </button>
@@ -1561,7 +1561,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                     {projects.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>No projects created. Enter name above to create your first project!</td>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-gray)' }}>No projects created. Enter name above to create your first project!</td>
                       </tr>
                     )}
                   </tbody>
@@ -1579,7 +1579,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Account Ledger Engine & Report</h3>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-white)' }}>Account Ledger Engine & Report</h3>
                 <span style={{ fontSize: '0.82rem', color: '#0284c7' }}>Mathematical Liquidity & Monthly Balance Engine</span>
               </div>
               <button
@@ -1591,11 +1591,11 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             </div>
 
             {/* MATHEMATICAL BALANCE FORMULA BOX */}
-            <div className="form-card" style={{ background: 'var(--app-surface-bg, #0f172a)', padding: '1.25rem', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#f59e0b', textTransform: 'uppercase' }}>
+            <div className="form-card" style={{ background: 'var(--app-surface-bg)', padding: '1.25rem', border: '1px solid var(--border-subtle)' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#d97706', textTransform: 'uppercase' }}>
                 Mathematical Balance Formulas
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: '0.82rem', fontFamily: 'monospace' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, fontSize: '0.82rem', fontFamily: 'monospace', color: 'var(--text-white)' }}>
                 <div>1. <strong>Opening Balance (B):</strong> B = E_prev + A</div>
                 <div>2. <strong>Spend (C):</strong> C = Σ Approved Claims</div>
                 <div>3. <strong>Claim Raised (D):</strong> D = Σ Pending Claims</div>
@@ -1608,7 +1608,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               <select
                 value={ledgerFilterProject}
                 onChange={(e) => setLedgerFilterProject(e.target.value)}
-                style={{ padding: 8, background: 'var(--app-card-bg, #1e293b)', color: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
+                style={{ padding: 8, background: 'var(--app-card-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
               >
                 <option value="ALL">Project: All</option>
                 {projects.map(p => (
@@ -1619,7 +1619,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               <select
                 value={ledgerFilterBranch}
                 onChange={(e) => setLedgerFilterBranch(e.target.value)}
-                style={{ padding: 8, background: 'var(--app-card-bg, #1e293b)', color: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
+                style={{ padding: 8, background: 'var(--app-card-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
               >
                 <option value="ALL">Branch: All</option>
                 {branches.map(b => (
@@ -1630,7 +1630,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
               <select
                 value={ledgerFilterYear}
                 onChange={(e) => setLedgerFilterYear(e.target.value)}
-                style={{ padding: 8, background: 'var(--app-card-bg, #1e293b)', color: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
+                style={{ padding: 8, background: 'var(--app-card-bg)', color: 'var(--text-white)', border: '1px solid var(--border-subtle)', borderRadius: 6 }}
               >
                 <option value="2026">Year: 2026</option>
                 <option value="2027">Year: 2027</option>
@@ -1640,7 +1640,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
             {/* ACCOUNT LEDGER MASTER TABLE */}
             <div className="form-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: 16, background: 'var(--app-surface-bg, #0f172a)', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.85rem', fontWeight: 800, fontFamily: 'monospace' }}>
+              <div style={{ padding: 16, background: 'var(--app-surface-bg)', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.85rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--text-white)' }}>
                 ACCOUNT LEDGER MASTER REPORT | PROJECT: {ledgerFilterProject} | BRANCH: {ledgerFilterBranch} | YEAR: {ledgerFilterYear}
               </div>
               <div style={{ overflowX: 'auto' }}>
@@ -1664,16 +1664,16 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                       const projectObj = projects.find(p => p.project_id === l.project_id);
                       return (
                         <tr key={index}>
-                          <td>{index + 1}</td>
-                          <td style={{ fontWeight: 700 }}>{projectObj ? projectObj.project_name : 'Orion'}</td>
-                          <td>Downtown HQ (#001)</td>
-                          <td>{l.year}</td>
-                          <td style={{ fontWeight: 700 }}>{l.month}</td>
-                          <td>₹ {Number(l.monthly_limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ color: 'var(--text-white)' }}>{index + 1}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--text-white)' }}>{projectObj ? projectObj.project_name : 'Orion'}</td>
+                          <td style={{ color: 'var(--text-white)' }}>Downtown HQ (#001)</td>
+                          <td style={{ color: 'var(--text-white)' }}>{l.year}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--text-white)' }}>{l.month}</td>
+                          <td style={{ color: 'var(--text-white)' }}>₹ {Number(l.monthly_limit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                           <td style={{ color: '#0284c7' }}>₹ {Number(l.opening_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          <td style={{ color: '#f59e0b' }}>₹ {Number(l.spend).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          <td>₹ {Number(l.claim_raised).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          <td style={{ fontWeight: 800, color: Number(l.ending_balance) < 0 ? '#ef4444' : '#10b981' }}>
+                          <td style={{ color: '#d97706' }}>₹ {Number(l.spend).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ color: '#d97706' }}>₹ {Number(l.claim_raised).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ fontWeight: 800, color: Number(l.ending_balance) < 0 ? '#dc2626' : '#10b981' }}>
                             ₹ {Number(l.ending_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                         </tr>
@@ -1682,19 +1682,19 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
 
                     {ledgerEntries.length === 0 && (
                       <tr>
-                        <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                        <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-gray)' }}>
                           No monthly ledger balances recorded for Year {ledgerFilterYear}.
                         </td>
                       </tr>
                     )}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: 'var(--app-surface-bg, #0f172a)', fontWeight: 800 }}>
-                      <td colSpan={5}>TOTAL (YEAR {ledgerFilterYear})</td>
-                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.monthly_limit || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.opening_balance || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.spend || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                      <td>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.claim_raised || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <tr style={{ background: 'var(--app-surface-bg)', fontWeight: 800 }}>
+                      <td colSpan={5} style={{ color: 'var(--text-white)' }}>TOTAL (YEAR {ledgerFilterYear})</td>
+                      <td style={{ color: 'var(--text-white)' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.monthly_limit || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#0284c7' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.opening_balance || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#d97706' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.spend || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ color: '#d97706' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.claim_raised || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td style={{ color: '#10b981', fontSize: '0.95rem' }}>₹ {ledgerEntries.reduce((sum, l) => sum + Number(l.ending_balance || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                     </tr>
                   </tfoot>
