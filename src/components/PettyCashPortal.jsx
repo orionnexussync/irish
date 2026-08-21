@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/supabase';
 import { audioService } from '../services/audioService';
+import { notificationService } from '../services/notificationService';
 import { detectFaceInVideo, extractFaceVectorFromVideo, matchFaceEmbedding } from '../services/faceEngine';
 
 export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode = 'ALL' }) {
@@ -432,6 +433,26 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
         action_taken: actionType === 'Approve' ? (newStatus === 'Approved' ? 'Approved (Completed)' : 'Approved (Routed to L2)') : actionType,
         remarks: historyRemarks,
         action_timestamp: new Date().toLocaleString()
+      });
+
+      // Trigger Mobile APK & Web In-App Pop-up Notification
+      let notifAction = 'APPROVED';
+      if (actionType === 'Approve') {
+        notifAction = newStatus === 'Approved' ? 'APPROVED' : 'APPROVED_L1';
+      } else if (actionType === 'Reject') {
+        notifAction = 'REJECTED';
+      } else if (actionType === 'Send Back') {
+        notifAction = 'SEND_BACK';
+      }
+
+      notificationService.notifyPettyCash({
+        action: notifAction,
+        claimNo: selectedClaim.claim_no,
+        empId: selectedClaim.emp_id,
+        empName: selectedClaim.emp_name,
+        amount: selectedClaim.amount,
+        approverName: currentUser.name,
+        branchName: claimBranch ? claimBranch.branch_name : 'MAIN'
       });
 
       setApproverRemarks('');

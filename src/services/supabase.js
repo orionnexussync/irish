@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_COMPANIES } from '../config/companies';
+import { notificationService } from './notificationService';
 
 const DEFAULT_COMPANY = DEFAULT_COMPANIES[0] || {
   company_code: 'DEMO',
@@ -1086,6 +1087,17 @@ export const api = {
     const updated = [newReq, ...reqs];
     setLocalData(STORAGE_KEYS.REGULARIZATION, updated);
 
+    // Trigger Mobile APK & Web In-App Pop-up Notification
+    notificationService.notifyRegularization({
+      action: 'SUBMITTED',
+      empId: newReq.emp_id,
+      empName: newReq.emp_name,
+      punchType: newReq.punch_type,
+      date: newReq.request_date,
+      approverName: approver1Name,
+      branchName: newReq.branch_name
+    });
+
     if (isSupabaseConfigured()) {
       let formattedTime = reqData.requested_time || '09:00';
       if (formattedTime.length === 5) formattedTime += ':00';
@@ -1136,6 +1148,13 @@ export const api = {
         updatedReq.approver_02_action_at = nowIso;
       }
       updatedReq.status = 'REJECTED';
+
+      notificationService.notifyRegularization({
+        action: 'REJECTED',
+        empId: target.emp_id,
+        empName: target.emp_name,
+        approverName: approverLevel === 2 ? target.approver_02_name : target.approver_01_name
+      });
     } else if (action === 'APPROVE') {
       if (approverLevel === 1 || target.status === 'PENDING_L1') {
         updatedReq.approver_01_status = 'APPROVED';
@@ -1145,6 +1164,13 @@ export const api = {
         if (target.approver_02_emp_id && target.approver_02_emp_id.trim() !== '') {
           updatedReq.current_approval_level = 2;
           updatedReq.status = 'PENDING_L2'; // Route to Superior Manager!
+
+          notificationService.notifyRegularization({
+            action: 'APPROVED_L1',
+            empId: target.emp_id,
+            empName: target.emp_name,
+            approverName: target.approver_01_name
+          });
         } else {
           // No Superior Manager configured -> Complete request!
           updatedReq.status = 'APPROVED';
@@ -1156,6 +1182,13 @@ export const api = {
             in_time: target.punch_type === 'Check-In' ? target.requested_time : '09:00 AM',
             out_time: target.punch_type === 'Check-Out' ? target.requested_time : '06:00 PM',
             remarks: `Approved by Respective Manager (${target.approver_01_name || 'Approver 01'}) - Req #${requestId}`
+          });
+
+          notificationService.notifyRegularization({
+            action: 'APPROVED',
+            empId: target.emp_id,
+            empName: target.emp_name,
+            approverName: target.approver_01_name
           });
         }
       } else if (approverLevel === 2 || target.status === 'PENDING_L2') {
@@ -1171,6 +1204,13 @@ export const api = {
           in_time: target.punch_type === 'Check-In' ? target.requested_time : '09:00 AM',
           out_time: target.punch_type === 'Check-Out' ? target.requested_time : '06:00 PM',
           remarks: `Fully Approved by Superior Manager (${target.approver_02_name || 'Approver 02'}) - Req #${requestId}`
+        });
+
+        notificationService.notifyRegularization({
+          action: 'APPROVED',
+          empId: target.emp_id,
+          empName: target.emp_name,
+          approverName: target.approver_02_name
         });
       }
     }
@@ -1292,6 +1332,16 @@ export const api = {
       updated[existingIndex] = { ...updated[existingIndex], ...claimObj };
     } else {
       updated = [claimObj, ...list];
+
+      // Trigger Mobile APK & Web In-App Pop-up Notification
+      notificationService.notifyPettyCash({
+        action: 'SUBMITTED',
+        claimNo: claimObj.claim_no,
+        empId: claimObj.emp_id,
+        empName: claimObj.emp_name,
+        amount: claimObj.amount,
+        branchName: claimObj.branch_name
+      });
     }
     setLocalData(STORAGE_KEYS.PETTY_CASH_CLAIMS, updated);
     return claimObj;

@@ -3,6 +3,7 @@ import { Tablet, Shield, Building2, Lock, Key, X, Check, LogOut, Palette, Dollar
 import { KioskApp } from './components/KioskApp';
 import { AdminPortal } from './components/AdminPortal';
 import { PettyCashPortal } from './components/PettyCashPortal';
+import { NotificationToastContainer } from './components/NotificationToastContainer';
 import { api } from './services/supabase';
 import { audioService } from './services/audioService';
 
@@ -556,6 +557,9 @@ export function App() {
           </div>
         </div>
       )}
+
+      {/* Global In-App Floating Popup Notification Toast Container */}
+      <NotificationToastContainer />
     </div>
   );
 }
