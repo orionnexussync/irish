@@ -223,16 +223,16 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
         setViewMode('DASHBOARD');
       }
     } else if (role === 'APPROVER_L1') {
-      setCurrentUser({ emp_id: 'EMP-2001', name: 'Alex Mercer (L1 Manager)', role: 'Approver_L1', branch_id: selectedBranchId || 1 });
+      setCurrentUser({ emp_id: 'EMP-1001', name: 'Anita Roy (Respective Manager - Approver 01)', role: 'Approver_L1', branch_id: selectedBranchId || 1 });
       setViewMode('APPROVER_QUEUE');
     } else if (role === 'APPROVER_L2') {
-      setCurrentUser({ emp_id: 'EMP-3005', name: 'James Vance (L2 Finance)', role: 'Approver_L2', branch_id: selectedBranchId || 1 });
+      setCurrentUser({ emp_id: 'EMP-1002', name: 'David Miller (Superior Manager - Approver 02)', role: 'Approver_L2', branch_id: selectedBranchId || 1 });
       setViewMode('APPROVER_QUEUE');
     } else if (role === 'ADMIN') {
       setCurrentUser({ emp_id: 'EMP-ADMIN', name: 'System Administrator', role: 'Admin', branch_id: selectedBranchId || 1 });
       setViewMode('SETUP');
     }
-    audioService.notify(`Switched session role to ${role.replace('_', ' ')}`);
+    audioService.notify(`Switched session to ${role === 'APPROVER_L1' ? 'Approver 01 (Respective Manager)' : role === 'APPROVER_L2' ? 'Approver 02 (Superior Manager)' : role}`);
   };
 
   // Compute Account Ledger Metrics for Current Month (August 2026)
@@ -375,7 +375,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
     }
   };
 
-  // Approver Action Handler (Approve / Reject / Send Back)
+  // Approver Action Handler (Approver 01: Respective Mgr -> Approver 02: Superior Mgr)
   const handleApproverDecision = (actionType) => {
     if (!selectedClaim) return;
 
@@ -387,26 +387,37 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
     try {
       const isL1 = userRole === 'APPROVER_L1';
       const isL2 = userRole === 'APPROVER_L2';
-      const amount = Number(selectedClaim.amount || 0);
+
+      const claimBranchId = Number(selectedClaim.branch_id || 1);
+      const claimBranch = branches.find(b => Number(b.branch_id) === claimBranchId);
+      const hasSuperiorManager = !!(claimBranch && claimBranch.superior_manager_id && claimBranch.superior_manager_id.trim() !== '');
 
       let newStatus = selectedClaim.current_status;
+      let historyLevel = isL1 ? 'Approver 01 (Respective Manager)' : 'Approver 02 (Superior Manager)';
+      let historyRemarks = approverRemarks;
 
       if (actionType === 'Approve') {
-        if (amount <= 5000) {
-          // <= 5000: Auto-approved by L1 (L2 bypassed)
-          newStatus = 'Approved';
-        } else {
-          // > 5000: Requires L2 approval
-          if (isL1) {
-            newStatus = 'In-Progress'; // Moves to L2 queue
-          } else if (isL2) {
-            newStatus = 'Approved'; // Final approval by L2
+        if (isL1) {
+          // Rule 2 & 3: If Superior Manager is configured, route to Superior Manager (Pending L2 / In-Progress)
+          if (hasSuperiorManager) {
+            newStatus = 'In-Progress'; // Moves to Approver 02 (Superior Manager) queue
+            if (!historyRemarks) historyRemarks = `Approved by Approver 01 (Respective Manager) - Routed to Approver 02 (Superior Manager: ${claimBranch.superior_manager_name || claimBranch.superior_manager_id})`;
+          } else {
+            // Rule 4: If Approver 02 is not configured, completed after approval by Approver 01
+            newStatus = 'Approved';
+            if (!historyRemarks) historyRemarks = 'Fully Approved by Approver 01 (Respective Manager - Single Tier)';
           }
+        } else if (isL2) {
+          // Approver 02 approval -> Completed!
+          newStatus = 'Approved';
+          if (!historyRemarks) historyRemarks = 'Final Approval Completed by Approver 02 (Superior Manager)';
         }
       } else if (actionType === 'Send Back') {
         newStatus = 'Send Back';
+        if (!historyRemarks) historyRemarks = 'Sent back for revisions';
       } else if (actionType === 'Reject') {
         newStatus = 'Rejected';
+        if (!historyRemarks) historyRemarks = 'Rejected by approver';
       }
 
       // Update Claim Status
@@ -417,9 +428,9 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
         claim_no: selectedClaim.claim_no,
         approver_id: currentUser.emp_id,
         approver_name: currentUser.name,
-        approval_level: isL1 ? 'Level 1' : 'Level 2',
-        action_taken: actionType,
-        remarks: approverRemarks || (actionType === 'Approve' ? 'Approved' : ''),
+        approval_level: historyLevel,
+        action_taken: actionType === 'Approve' ? (newStatus === 'Approved' ? 'Approved (Completed)' : 'Approved (Routed to L2)') : actionType,
+        remarks: historyRemarks,
         action_timestamp: new Date().toLocaleString()
       });
 
@@ -476,15 +487,11 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
     }
   };
 
-  // Filter Claims for Pending Approver Queue
-  const pendingApprovalsList = claims.filter(c => {
-    if (userRole === 'APPROVER_L1') {
-      return c.current_status === 'Pending';
-    } else if (userRole === 'APPROVER_L2') {
-      return c.current_status === 'In-Progress' || (c.current_status === 'Pending' && Number(c.amount) > 5000);
-    }
-    return c.current_status === 'Pending' || c.current_status === 'In-Progress';
-  });
+  // Filter Claims for Approver 01 (Respective Manager) vs Approver 02 (Superior Manager)
+  const l1PendingClaims = claims.filter(c => c.current_status === 'Pending' || c.current_status === 'Pending L1');
+  const l2PendingClaims = claims.filter(c => c.current_status === 'In-Progress' || c.current_status === 'Pending L2');
+
+  const pendingApprovalsList = userRole === 'APPROVER_L1' ? l1PendingClaims : l2PendingClaims;
 
   // Filter History for Selected Claim
   const currentClaimHistory = approvalHistory.filter(h =>
@@ -577,7 +584,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
-              <Clock size={16} /> 🛡️ Approver L1 Queue ({pendingApprovalsList.length})
+              <Clock size={16} /> 🛡️ Approver 01: Respective Manager Queue ({l1PendingClaims.length})
             </button>
 
             <button
@@ -592,7 +599,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                 fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap'
               }}
             >
-              <Clock size={16} /> ⚖️ Approver L2 Queue
+              <Clock size={16} /> ⚖️ Approver 02: Superior Manager Queue ({l2PendingClaims.length})
             </button>
 
             <button
@@ -1083,18 +1090,25 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Petty Cash Approver Portal</h3>
-                <span style={{ fontSize: '0.82rem', color: '#10b981', fontWeight: 700 }}>
-                  Active Queue: {userRole === 'APPROVER_L1' ? 'Level 1 Approvals (Manager)' : 'Level 2 Finance Approvals'}
+                <span style={{ fontSize: '0.82rem', color: userRole === 'APPROVER_L1' ? '#10b981' : '#c084fc', fontWeight: 700 }}>
+                  {userRole === 'APPROVER_L1'
+                    ? 'Active Queue: Approver 01 (Respective Manager - Mandatory)'
+                    : 'Active Queue: Approver 02 (Superior Manager - Conditional/Optional)'}
                 </span>
               </div>
-              <div style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 16px', borderRadius: 9999, fontWeight: 800, fontSize: '0.88rem' }}>
-                Total Pending Approvals: {pendingApprovalsList.length}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#10b981', padding: '6px 14px', borderRadius: 9999, fontWeight: 800, fontSize: '0.82rem' }}>
+                  L1 Pending: {l1PendingClaims.length}
+                </div>
+                <div style={{ background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', padding: '6px 14px', borderRadius: 9999, fontWeight: 800, fontSize: '0.82rem' }}>
+                  L2 Pending: {l2PendingClaims.length}
+                </div>
               </div>
             </div>
 
             <div className="form-card">
               <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, textTransform: 'uppercase', color: '#0284c7' }}>
-                Pending Approval List
+                {userRole === 'APPROVER_L1' ? 'Pending Approver 01 (Respective Manager) Queue' : 'Pending Approver 02 (Superior Manager) Queue'}
               </h4>
 
               <div style={{ overflowX: 'auto' }}>
@@ -1102,10 +1116,10 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                   <thead>
                     <tr>
                       <th>Claim No</th>
-                      <th>Raised By</th>
-                      <th>Project</th>
-                      <th>Category</th>
+                      <th>Raised By & Branch</th>
+                      <th>Project & Category</th>
                       <th>Amount</th>
+                      <th>Approval Routing Status</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -1113,14 +1127,43 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                     {pendingApprovalsList.map(c => {
                       const projectObj = projects.find(p => p.project_id === c.project_id);
                       const catObj = categories.find(cat => cat.category_code === c.category_code);
+                      const claimBranch = branches.find(b => Number(b.branch_id) === Number(c.branch_id || 1));
+                      const branchName = claimBranch ? claimBranch.branch_name : 'MAIN';
 
                       return (
                         <tr key={c.claim_no}>
                           <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0284c7' }}>{c.claim_no}</td>
-                          <td>{c.emp_id}</td>
-                          <td>{projectObj ? projectObj.project_name : 'Orion'}</td>
-                          <td>{catObj ? catObj.category_name : c.category_code}</td>
+                          <td>
+                            <strong>{c.emp_name || c.emp_id}</strong>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>{c.emp_id}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>🏢 {branchName}</div>
+                          </td>
+                          <td>
+                            <div><strong>{projectObj ? projectObj.project_name : 'Orion'}</strong></div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{catObj ? catObj.category_name : c.category_code}</div>
+                          </td>
                           <td style={{ fontWeight: 800, color: '#10b981' }}>₹ {Number(c.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td>
+                            {userRole === 'APPROVER_L1' ? (
+                              <div>
+                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: '0.75rem', fontWeight: 800 }}>
+                                  ⏳ Pending Approver 01
+                                </span>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
+                                  Respective Mgr: <strong>{claimBranch ? (claimBranch.manager_name || claimBranch.respective_manager_id) : 'Branch Mgr'}</strong>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <span style={{ padding: '2px 8px', borderRadius: 4, background: 'rgba(192,132,252,0.2)', color: '#c084fc', fontSize: '0.75rem', fontWeight: 800 }}>
+                                  ⏳ Pending Approver 02
+                                </span>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>
+                                  Superior Mgr: <strong>{claimBranch ? (claimBranch.superior_manager_name || claimBranch.superior_manager_id) : 'Superior Mgr'}</strong>
+                                </div>
+                              </div>
+                            )}
+                          </td>
                           <td>
                             <button
                               onClick={() => {
@@ -1129,7 +1172,7 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
                               }}
                               style={{ padding: '6px 14px', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
                             >
-                              [Review]
+                              [Review & Action]
                             </button>
                           </td>
                         </tr>
@@ -1153,87 +1196,115 @@ export function PettyCashPortal({ selectedBranchId, onBackToAdmin, platformMode 
         {/* =========================================================================
            SCREEN 05: PETTY CASH APPROVER REVIEW SCREEN (WEB APP)
            ========================================================================= */}
-        {viewMode === 'APPROVER_REVIEW' && selectedClaim && (
-          <div style={{ maxWidth: 760, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
-              <button
-                onClick={() => setViewMode('APPROVER_QUEUE')}
-                style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
-              >
-                &lt; Back to Approvals
-              </button>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>CLAIM REVIEW PAGE</h3>
-            </div>
+        {viewMode === 'APPROVER_REVIEW' && selectedClaim && (() => {
+          const claimBranch = branches.find(b => Number(b.branch_id) === Number(selectedClaim.branch_id || 1));
+          const hasSuperiorManager = !!(claimBranch && claimBranch.superior_manager_id && claimBranch.superior_manager_id.trim() !== '');
 
-            <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>Claim No: {selectedClaim.claim_no}</span>
-                  <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Raised By: <strong>{selectedClaim.emp_id}</strong></span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, fontSize: '0.85rem' }}>
-                  <div>Project: <strong>{projects.find(p => p.project_id === selectedClaim.project_id)?.project_name || 'Orion'}</strong></div>
-                  <div>Expense Date: <strong>{selectedClaim.expense_date}</strong></div>
-                  <div>Category: <strong>{categories.find(c => c.category_code === selectedClaim.category_code)?.category_name || selectedClaim.category_code}</strong></div>
-                  <div>Invoice No: <strong>{selectedClaim.invoice_no}</strong></div>
-                </div>
-                <div style={{ marginTop: 12, fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>
-                  Claim Amount: ₹ {Number(selectedClaim.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </div>
-                <div style={{ marginTop: 8, fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  Reason: {selectedClaim.reasons}
-                </div>
-                <div style={{ marginTop: 12 }}>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Attachment: </span>
-                  <button
-                    onClick={() => alert(`Opening receipt document: ${selectedClaim.attachment_path || 'receipt.pdf'}`)}
-                    style={{ padding: '4px 10px', background: '#334155', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
-                  >
-                    📄 View_Receipt.pdf
-                  </button>
-                </div>
+          return (
+            <div style={{ maxWidth: 760, margin: '0 auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem' }}>
+                <button
+                  onClick={() => setViewMode('APPROVER_QUEUE')}
+                  style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  &lt; Back to Approvals
+                </button>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>CLAIM REVIEW & APPROVAL MATRIX</h3>
               </div>
 
-              {/* APPROVER DECISION SECTION */}
-              <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>
-                  APPROVER DECISION SECTION
-                </h4>
-                <div className="form-group" style={{ marginBottom: 16 }}>
-                  <label>Approver Remarks* (Mandatory for Reject & Send Back)</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Enter approval, rejection, or send-back comments here..."
-                    value={approverRemarks}
-                    onChange={(e) => setApproverRemarks(e.target.value)}
-                    style={{ padding: 10, background: 'var(--app-card-bg, #1e293b)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
-                  />
+              <div className="form-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284c7' }}>Claim No: {selectedClaim.claim_no}</span>
+                    <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>Raised By: <strong>{selectedClaim.emp_id}</strong></span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, fontSize: '0.85rem' }}>
+                    <div>Assigned Branch: <strong>{claimBranch ? claimBranch.branch_name : 'MAIN'}</strong></div>
+                    <div>Expense Date: <strong>{selectedClaim.expense_date}</strong></div>
+                    <div>Project: <strong>{projects.find(p => p.project_id === selectedClaim.project_id)?.project_name || 'Orion'}</strong></div>
+                    <div>Category: <strong>{categories.find(c => c.category_code === selectedClaim.category_code)?.category_name || selectedClaim.category_code}</strong></div>
+                    <div>Invoice No: <strong>{selectedClaim.invoice_no}</strong></div>
+                  </div>
+
+                  {/* BRANCH MANAGER APPROVAL MATRIX ROUTING DISPLAY */}
+                  <div style={{ marginTop: 12, padding: 12, background: 'rgba(2, 132, 199, 0.1)', border: '1px solid rgba(2, 132, 199, 0.3)', borderRadius: 8, fontSize: '0.82rem' }}>
+                    <div style={{ color: '#38bdf8', fontWeight: 800, marginBottom: 4 }}>📋 Multi-Tier Approval Matrix Configuration:</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div>• <strong>Approver 01 (Respective Manager - Mandatory):</strong> <span style={{ color: '#38bdf8' }}>{claimBranch?.respective_manager_id ? `${claimBranch.respective_manager_id} - ${claimBranch.manager_name}` : (claimBranch?.manager_name || 'Assigned Branch Manager')}</span></div>
+                      <div>• <strong>Approver 02 (Superior Manager - Optional):</strong> <span style={{ color: '#c084fc' }}>{hasSuperiorManager ? `${claimBranch.superior_manager_id} - ${claimBranch.superior_manager_name}` : 'Not Configured (Single-Tier Direct Approval)'}</span></div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 12, fontSize: '1.25rem', fontWeight: 800, color: '#10b981' }}>
+                    Claim Amount: ₹ {Number(selectedClaim.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    Reason: {selectedClaim.reasons}
+                  </div>
+                  <div style={{ marginTop: 12 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Attachment: </span>
+                    <button
+                      onClick={() => alert(`Opening receipt document: ${selectedClaim.attachment_path || 'receipt.pdf'}`)}
+                      style={{ padding: '4px 10px', background: '#334155', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                    >
+                      📄 View_Receipt.pdf
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button
-                    onClick={() => handleApproverDecision('Approve')}
-                    style={{ flex: 1, padding: 12, background: '#059669', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    🟢 APPROVE
-                  </button>
-                  <button
-                    onClick={() => handleApproverDecision('Reject')}
-                    style={{ flex: 1, padding: 12, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    🔴 REJECT
-                  </button>
-                  <button
-                    onClick={() => handleApproverDecision('Send Back')}
-                    style={{ flex: 1, padding: 12, background: '#d97706', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    🟡 SEND BACK
-                  </button>
+                {/* APPROVER DECISION SECTION */}
+                <div style={{ background: 'var(--app-surface-bg, #0f172a)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase' }}>
+                    {userRole === 'APPROVER_L1' ? 'APPROVER 01 (RESPECTIVE MANAGER) DECISION' : 'APPROVER 02 (SUPERIOR MANAGER) DECISION'}
+                  </h4>
+
+                  {/* Informative Workflow Alert */}
+                  <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 6, fontSize: '0.8rem', color: '#fcd34d', marginBottom: 14 }}>
+                    {userRole === 'APPROVER_L1' ? (
+                      hasSuperiorManager
+                        ? `ℹ️ Approving will advance this claim to Approver 02 (Superior Manager: ${claimBranch?.superior_manager_name || claimBranch?.superior_manager_id}).`
+                        : `ℹ️ Approving will complete and finalize this claim (Single-Tier approval by Respective Manager).`
+                    ) : (
+                      `ℹ️ Final Level 2 approval sign-off by Superior Manager.`
+                    )}
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 16 }}>
+                    <label>Approver Remarks* (Mandatory for Reject & Send Back)</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Enter approval, rejection, or send-back comments here..."
+                      value={approverRemarks}
+                      onChange={(e) => setApproverRemarks(e.target.value)}
+                      style={{ padding: 10, background: 'var(--app-card-bg, #1e293b)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: '#fff' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={() => handleApproverDecision('Approve')}
+                      style={{ flex: 1, padding: 12, background: '#059669', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      🟢 {userRole === 'APPROVER_L1' ? (hasSuperiorManager ? 'APPROVE (ROUTE TO SUPERIOR MGR)' : 'APPROVE (FINALIZE)') : 'APPROVE (FINAL SIGN-OFF)'}
+                    </button>
+                    <button
+                      onClick={() => handleApproverDecision('Reject')}
+                      style={{ flex: 1, padding: 12, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      🔴 REJECT
+                    </button>
+                    <button
+                      onClick={() => handleApproverDecision('Send Back')}
+                      style={{ flex: 1, padding: 12, background: '#d97706', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      🟡 SEND BACK
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* =========================================================================
            SECTION 4: MAINTENANCE & MASTER SETUP MODULES (WEB APP)
