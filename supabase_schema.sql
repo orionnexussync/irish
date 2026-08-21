@@ -12,6 +12,13 @@ CREATE TABLE IF NOT EXISTS tbl_branches (
     branch_name VARCHAR(150) NOT NULL,
     location_code VARCHAR(50) NOT NULL UNIQUE,
     address TEXT,
+    respective_manager_id VARCHAR(50), -- Mandatory in Branch Management form (Approver 01)
+    manager_name VARCHAR(150),
+    manager_phone VARCHAR(50),
+    superior_manager_id VARCHAR(50), -- Mandatory in Branch Management form (Approver 02)
+    superior_manager_name VARCHAR(150),
+    superior_manager_phone VARCHAR(50),
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -117,12 +124,22 @@ CREATE TABLE IF NOT EXISTS tbl_email_schedules (
 CREATE TABLE IF NOT EXISTS tbl_regularization_requests (
     request_id BIGSERIAL PRIMARY KEY,
     emp_id VARCHAR(50) NOT NULL REFERENCES tbl_employees(emp_id),
+    branch_id INT REFERENCES tbl_branches(branch_id),
     request_date DATE NOT NULL,
     shift_id INT NOT NULL REFERENCES tbl_shifts(shift_id),
     punch_type VARCHAR(20) NOT NULL, -- Check-In, Check-Out
     requested_time TIME NOT NULL,
     remarks TEXT,
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+    approver_01_emp_id VARCHAR(50), -- Respective Manager (Mandatory Approver 01)
+    approver_01_name VARCHAR(150),
+    approver_01_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+    approver_01_action_at TIMESTAMP WITH TIME ZONE,
+    approver_02_emp_id VARCHAR(50), -- Superior Manager (Optional Approver 02)
+    approver_02_name VARCHAR(150),
+    approver_02_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED, NOT_APPLICABLE
+    approver_02_action_at TIMESTAMP WITH TIME ZONE,
+    current_approval_level INT DEFAULT 1, -- 1 = Approver 01 (Respective Mgr), 2 = Approver 02 (Superior Mgr)
+    status VARCHAR(30) DEFAULT 'PENDING_L1', -- PENDING_L1, PENDING_L2, APPROVED, REJECTED
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

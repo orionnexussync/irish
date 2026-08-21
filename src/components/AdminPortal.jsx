@@ -73,8 +73,12 @@ export function AdminPortal({ selectedBranchId, onLockAdmin, onBranchesUpdated, 
     branch_name: '',
     location_code: '',
     address: '',
+    respective_manager_id: '',
     manager_name: '',
     manager_phone: '',
+    superior_manager_id: '',
+    superior_manager_name: '',
+    superior_manager_phone: '',
     is_active: true
   });
 
@@ -400,19 +404,31 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
   const handleSaveBranch = async (e) => {
     e.preventDefault();
     if (!branchForm.branch_name || !branchForm.location_code) {
-      alert('Branch Name and Location Code are required');
+      alert('Branch Name and Location Code are required.');
       return;
     }
+    if (!branchForm.respective_manager_id || branchForm.respective_manager_id.trim() === '') {
+      alert('Respective Manager (Employee ID) is mandatory.');
+      return;
+    }
+    if (!branchForm.superior_manager_id || branchForm.superior_manager_id.trim() === '') {
+      alert('Superior Manager (Employee ID) is mandatory.');
+      return;
+    }
+
     try {
       const updated = await api.saveBranch(branchForm);
       const freshBranches = updated || api.getBranches();
       setBranches([...freshBranches]);
       setBranchForm({
-        branch_id: null, branch_name: '', location_code: '', address: '', manager_name: '', manager_phone: '', is_active: true
+        branch_id: null, branch_name: '', location_code: '', address: '',
+        respective_manager_id: '', manager_name: '', manager_phone: '',
+        superior_manager_id: '', superior_manager_name: '', superior_manager_phone: '',
+        is_active: true
       });
       await loadAllData();
       if (onBranchesUpdated) onBranchesUpdated();
-      alert('✅ Branch location saved successfully! Data table refreshed instantly.');
+      alert('✅ Branch location saved successfully! Respective & Superior Manager routing updated.');
     } catch (err) {
       alert('Error saving branch: ' + err.message);
     }
@@ -1568,10 +1584,10 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
         {activeTab === 'LOCATIONS' && (
           <div className="tab-content">
             <h2>Branch Location Configuration</h2>
-            <p className="tab-subtitle">Enable or disable company branches and manage respective location managers.</p>
+            <p className="tab-subtitle">Configure company branches, assign mandatory Respective Managers and Superior Managers for attendance approval matrix routing.</p>
 
             <div className="form-card" style={{ marginBottom: 24 }}>
-              <h3>Add / Edit Branch Location</h3>
+              <h3>{branchForm.branch_id ? `Edit Branch #${branchForm.branch_id}` : 'Add New Branch Location'}</h3>
               <form onSubmit={handleSaveBranch} className="grid-form">
                 <div className="form-group">
                   <label>Branch Name *</label>
@@ -1593,17 +1609,42 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                     onChange={e => setBranchForm({ ...branchForm, location_code: e.target.value })}
                   />
                 </div>
+
+                {/* Respective Manager – Employee ID (Mandatory Approver 01) */}
                 <div className="form-group">
-                  <label>Respective Manager Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Anita Roy"
-                    value={branchForm.manager_name}
-                    onChange={e => setBranchForm({ ...branchForm, manager_name: e.target.value })}
-                  />
+                  <label>Respective Manager – Employee ID * (Mandatory Approver 01)</label>
+                  <select
+                    required
+                    value={branchForm.respective_manager_id}
+                    onChange={e => {
+                      const selId = e.target.value;
+                      const empObj = employees.find(emp => emp.emp_id === selId);
+                      setBranchForm({
+                        ...branchForm,
+                        respective_manager_id: selId,
+                        manager_name: empObj ? `${empObj.first_name} ${empObj.last_name}` : branchForm.manager_name,
+                        manager_phone: empObj ? (empObj.mobile_no || '') : branchForm.manager_phone
+                      });
+                    }}
+                    style={{ background: '#0f172a', color: '#38bdf8', fontWeight: 'bold' }}
+                  >
+                    <option value="">-- Select Respective Manager (Mandatory) --</option>
+                    {employees.map(emp => (
+                      <option key={emp.emp_id} value={emp.emp_id}>
+                        {emp.emp_id} - {emp.first_name} {emp.last_name} ({emp.designation || 'Staff'})
+                      </option>
+                    ))}
+                    {/* Fallback if employee is not in list */}
+                    {branchForm.respective_manager_id && !employees.some(e => e.emp_id === branchForm.respective_manager_id) && (
+                      <option value={branchForm.respective_manager_id}>
+                        {branchForm.respective_manager_id} - {branchForm.manager_name || 'Manager'}
+                      </option>
+                    )}
+                  </select>
                 </div>
+
                 <div className="form-group">
-                  <label>Manager Contact Phone</label>
+                  <label>Respective Manager Contact Phone</label>
                   <input
                     type="text"
                     placeholder="e.g. +1 555-010-1002"
@@ -1611,6 +1652,49 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                     onChange={e => setBranchForm({ ...branchForm, manager_phone: e.target.value })}
                   />
                 </div>
+
+                {/* Superior Manager – Employee ID (Mandatory Approver 02 in Configuration) */}
+                <div className="form-group">
+                  <label>Superior Manager – Employee ID * (Mandatory Approver 02)</label>
+                  <select
+                    required
+                    value={branchForm.superior_manager_id}
+                    onChange={e => {
+                      const selId = e.target.value;
+                      const empObj = employees.find(emp => emp.emp_id === selId);
+                      setBranchForm({
+                        ...branchForm,
+                        superior_manager_id: selId,
+                        superior_manager_name: empObj ? `${empObj.first_name} ${empObj.last_name}` : branchForm.superior_manager_name,
+                        superior_manager_phone: empObj ? (empObj.mobile_no || '') : branchForm.superior_manager_phone
+                      });
+                    }}
+                    style={{ background: '#0f172a', color: '#c084fc', fontWeight: 'bold' }}
+                  >
+                    <option value="">-- Select Superior Manager (Mandatory) --</option>
+                    {employees.map(emp => (
+                      <option key={emp.emp_id} value={emp.emp_id}>
+                        {emp.emp_id} - {emp.first_name} {emp.last_name} ({emp.designation || 'Superior Manager'})
+                      </option>
+                    ))}
+                    {branchForm.superior_manager_id && !employees.some(e => e.emp_id === branchForm.superior_manager_id) && (
+                      <option value={branchForm.superior_manager_id}>
+                        {branchForm.superior_manager_id} - {branchForm.superior_manager_name || 'Superior Mgr'}
+                      </option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Superior Manager Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +1 555-010-1003"
+                    value={branchForm.superior_manager_phone}
+                    onChange={e => setBranchForm({ ...branchForm, superior_manager_phone: e.target.value })}
+                  />
+                </div>
+
                 <div className="form-group full-width">
                   <label>Physical Address</label>
                   <input
@@ -1620,10 +1704,24 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                     onChange={e => setBranchForm({ ...branchForm, address: e.target.value })}
                   />
                 </div>
-                <div className="form-group full-width" style={{ marginTop: 8 }}>
+                <div className="form-group full-width" style={{ marginTop: 8, display: 'flex', gap: 10 }}>
                   <button type="submit" className="submit-btn" style={{ width: 'auto', padding: '10px 24px' }}>
-                    <Plus size={16} /> Save Branch Location
+                    <Plus size={16} /> {branchForm.branch_id ? 'Update Branch Location' : 'Save Branch Location'}
                   </button>
+                  {branchForm.branch_id && (
+                    <button
+                      type="button"
+                      onClick={() => setBranchForm({
+                        branch_id: null, branch_name: '', location_code: '', address: '',
+                        respective_manager_id: '', manager_name: '', manager_phone: '',
+                        superior_manager_id: '', superior_manager_name: '', superior_manager_phone: '',
+                        is_active: true
+                      })}
+                      style={{ padding: '10px 18px', background: '#334155', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
@@ -1636,44 +1734,89 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
                     <th>ID</th>
                     <th>Branch Name</th>
                     <th>Location Code</th>
-                    <th>Respective Manager</th>
+                    <th>Respective Manager (Approver 01)</th>
+                    <th>Superior Manager (Approver 02)</th>
                     <th>Manager Phone</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {branches.map(b => (
-                    <tr key={b.branch_id}>
-                      <td>#{b.branch_id}</td>
-                      <td><strong>{b.branch_name}</strong></td>
-                      <td>{b.location_code}</td>
-                      <td>{b.manager_name}</td>
-                      <td>{b.manager_phone}</td>
-                      <td>
-                        <span className={`status-pill ${b.is_active ? 'active' : 'inactive'}`}>
-                          {b.is_active ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => handleToggleBranchActive(b.branch_id)}
-                          style={{
-                            padding: '6px 12px',
-                            background: b.is_active ? '#ef4444' : '#10b981',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            fontSize: 12,
-                            fontWeight: 600
-                          }}
-                        >
-                          {b.is_active ? 'Disable Branch' : 'Enable Branch'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {branches.map(b => {
+                    const rMgrEmp = employees.find(e => e.emp_id === b.respective_manager_id);
+                    const sMgrEmp = employees.find(e => e.emp_id === b.superior_manager_id);
+                    const rMgrLabel = b.respective_manager_id
+                      ? `${b.respective_manager_id} - ${rMgrEmp ? `${rMgrEmp.first_name} ${rMgrEmp.last_name}` : (b.manager_name || 'Manager')}`
+                      : (b.manager_name || '---');
+                    const sMgrLabel = b.superior_manager_id
+                      ? `${b.superior_manager_id} - ${sMgrEmp ? `${sMgrEmp.first_name} ${sMgrEmp.last_name}` : (b.superior_manager_name || 'Superior Mgr')}`
+                      : (b.superior_manager_name || 'Not Configured');
+
+                    return (
+                      <tr key={b.branch_id}>
+                        <td>#{b.branch_id}</td>
+                        <td><strong>{b.branch_name}</strong></td>
+                        <td>{b.location_code}</td>
+                        <td style={{ color: '#38bdf8', fontWeight: 600 }}>{rMgrLabel}</td>
+                        <td style={{ color: '#c084fc', fontWeight: 600 }}>{sMgrLabel}</td>
+                        <td>{b.manager_phone || '---'}</td>
+                        <td>
+                          <span className={`status-pill ${b.is_active ? 'active' : 'inactive'}`}>
+                            {b.is_active ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              onClick={() => {
+                                setBranchForm({
+                                  branch_id: b.branch_id,
+                                  branch_name: b.branch_name,
+                                  location_code: b.location_code,
+                                  address: b.address || '',
+                                  respective_manager_id: b.respective_manager_id || '',
+                                  manager_name: b.manager_name || '',
+                                  manager_phone: b.manager_phone || '',
+                                  superior_manager_id: b.superior_manager_id || '',
+                                  superior_manager_name: b.superior_manager_name || '',
+                                  superior_manager_phone: b.superior_manager_phone || '',
+                                  is_active: b.is_active
+                                });
+                                window.scrollTo({ top: 300, behavior: 'smooth' });
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#0284c7',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleToggleBranchActive(b.branch_id)}
+                              style={{
+                                padding: '6px 12px',
+                                background: b.is_active ? '#ef4444' : '#10b981',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600
+                              }}
+                            >
+                              {b.is_active ? 'Disable' : 'Enable'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1924,52 +2067,345 @@ CREATE POLICY "Allow anon full access to tbl_account_ledger" ON tbl_account_ledg
           </div>
         )}
 
-        {/* TAB 7: REGULARIZATION */}
+        {/* TAB 7: REGULARIZATION & MISSED PUNCH APPROVAL MATRIX */}
         {activeTab === 'REGULARIZATION' && (
           <div className="tab-content">
-            <h2>Missed Punch & Regularization Approval</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 8 }}>
+              <div>
+                <h2>Missed Punch & Regularization Approval Matrix</h2>
+                <p className="tab-subtitle">Multi-Tier Approval Workflow: Approver 01 (Respective Manager - Mandatory) &rarr; Approver 02 (Superior Manager - Conditional/Optional).</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ padding: '6px 14px', background: '#0f172a', border: '1px solid #f59e0b', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b' }}>
+                  L1 Pending: <strong>{regularizationReqs.filter(r => r.status === 'PENDING_L1' || r.status === 'PENDING').length}</strong>
+                </div>
+                <div style={{ padding: '6px 14px', background: '#0f172a', border: '1px solid #c084fc', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, color: '#c084fc' }}>
+                  L2 Pending: <strong>{regularizationReqs.filter(r => r.status === 'PENDING_L2').length}</strong>
+                </div>
+                <div style={{ padding: '6px 14px', background: '#0f172a', border: '1px solid #10b981', borderRadius: 20, fontSize: '0.82rem', fontWeight: 700, color: '#10b981' }}>
+                  Approved: <strong>{regularizationReqs.filter(r => r.status === 'APPROVED').length}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* DIRECT REGULARIZATION / SUBMISSION FORM */}
+            <div className="form-card" style={{ marginBottom: 24 }}>
+              <h3>Submit Attendance Regularization Request</h3>
+              <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: -4, marginBottom: 16 }}>
+                Select employee to automatically identify their Assigned Branch, Respective Manager (Approver 01), and Superior Manager (Approver 02).
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!regForm.emp_id) {
+                    alert('Please select an employee');
+                    return;
+                  }
+                  try {
+                    await api.submitRegularizationRequest({
+                      emp_id: regForm.emp_id,
+                      request_date: regForm.date_stamp,
+                      shift_id: regForm.shift_id,
+                      punch_type: regForm.action === 'PRESENT' ? 'Check-In' : 'Check-Out',
+                      requested_time: regForm.in_time || '09:00:00',
+                      remarks: regForm.remarks || 'Regularization request raised by Admin'
+                    });
+                    setRegForm({
+                      emp_id: '', date_stamp: new Date().toISOString().split('T')[0], shift_id: 1,
+                      action: 'PRESENT', in_time: '09:00:00', out_time: '18:00:00', remarks: ''
+                    });
+                    await loadAllData();
+                    alert('✅ Regularization Request submitted successfully! Routed to Approver 01 (Respective Manager).');
+                  } catch (err) {
+                    alert('Failed to submit request: ' + err.message);
+                  }
+                }}
+                className="grid-form"
+              >
+                <div className="form-group">
+                  <label>Select Employee *</label>
+                  <select
+                    required
+                    value={regForm.emp_id}
+                    onChange={e => setRegForm({ ...regForm, emp_id: e.target.value })}
+                  >
+                    <option value="">-- Choose Employee --</option>
+                    {employees.map(e => (
+                      <option key={e.emp_id} value={e.emp_id}>
+                        {e.emp_id} - {e.first_name} {e.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Request Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={regForm.date_stamp}
+                    onChange={e => setRegForm({ ...regForm, date_stamp: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Target Shift *</label>
+                  <select
+                    value={regForm.shift_id}
+                    onChange={e => setRegForm({ ...regForm, shift_id: Number(e.target.value) })}
+                  >
+                    {shifts.map(s => (
+                      <option key={s.shift_id} value={s.shift_id}>
+                        {s.shift_name} ({s.start_time} - {s.end_time})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Punch Type *</label>
+                  <select
+                    value={regForm.action}
+                    onChange={e => setRegForm({ ...regForm, action: e.target.value })}
+                  >
+                    <option value="PRESENT">Check-In Punch</option>
+                    <option value="CHECK_OUT">Check-Out Punch</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Corrected Punch Time *</label>
+                  <input
+                    type="time"
+                    required
+                    value={regForm.in_time}
+                    onChange={e => setRegForm({ ...regForm, in_time: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Reason / Remarks</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Biometric device offline / Client site visit"
+                    value={regForm.remarks}
+                    onChange={e => setRegForm({ ...regForm, remarks: e.target.value })}
+                  />
+                </div>
+
+                {/* Routing Matrix Preview */}
+                {(() => {
+                  const selEmp = employees.find(e => e.emp_id === regForm.emp_id);
+                  if (!selEmp) return null;
+                  const empBranch = branches.find(b => Number(b.branch_id) === Number(selEmp.branch_id));
+                  const rMgr = selEmp && empBranch ? (empBranch.respective_manager_id || empBranch.manager_name || 'Assigned Branch Mgr') : '---';
+                  const sMgr = selEmp && empBranch ? (empBranch.superior_manager_id || empBranch.superior_manager_name || 'None (Optional)') : '---';
+
+                  return (
+                    <div className="form-group full-width" style={{ padding: 12, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontSize: '0.85rem' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 700 }}>🔍 Employee-to-Branch Routing Preview:</span>{' '}
+                      Branch: <strong>{empBranch ? empBranch.branch_name : 'MAIN'}</strong> |{' '}
+                      Approver 01 (Respective Mgr): <strong style={{ color: '#38bdf8' }}>{rMgr}</strong> |{' '}
+                      Approver 02 (Superior Mgr): <strong style={{ color: '#c084fc' }}>{sMgr}</strong>
+                    </div>
+                  );
+                })()}
+
+                <div className="form-group full-width" style={{ marginTop: 8 }}>
+                  <button type="submit" className="submit-btn" style={{ width: 'auto', padding: '10px 24px' }}>
+                    <Plus size={16} /> Submit Regularization Request
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* REQUESTS QUEUE & APPROVAL MATRIX TABLE */}
             <div className="card-section">
-              <h3>Pending Employee Kiosk Requests</h3>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Req ID</th>
-                    <th>Employee</th>
-                    <th>Date</th>
-                    <th>Punch Type</th>
-                    <th>Time</th>
-                    <th>Remarks</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {regularizationReqs.map(r => (
-                    <tr key={r.request_id}>
-                      <td>#{r.request_id}</td>
-                      <td>{r.emp_name} ({r.emp_id})</td>
-                      <td>{r.request_date}</td>
-                      <td>{r.punch_type}</td>
-                      <td>{r.requested_time}</td>
-                      <td>{r.remarks}</td>
-                      <td>
-                        {r.status === 'PENDING' ? (
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={async () => { await api.updateRegularizationStatus(r.request_id, 'APPROVED'); await loadAllData(); }} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Approve</button>
-                            <button onClick={async () => { await api.updateRegularizationStatus(r.request_id, 'REJECTED'); await loadAllData(); }} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer' }}>Reject</button>
-                          </div>
-                        ) : (
-                          <span className={`status-pill ${r.status === 'APPROVED' ? 'active' : 'inactive'}`}>{r.status}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {regularizationReqs.length === 0 && (
+              <h3>Attendance Regularization Approval Queue</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 16 }}>No regularization requests pending.</td>
+                      <th>Req ID</th>
+                      <th>Employee & Branch</th>
+                      <th>Date & Shift</th>
+                      <th>Punch Type & Time</th>
+                      <th>Remarks</th>
+                      <th>Approver 01 (Respective Mgr)</th>
+                      <th>Approver 02 (Superior Mgr)</th>
+                      <th>Workflow Status</th>
+                      <th>Approval Action</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {regularizationReqs.map(r => {
+                      const empObj = employees.find(e => e.emp_id === r.emp_id);
+                      const branchObj = branches.find(b => b.branch_id === (empObj ? empObj.branch_id : r.branch_id));
+                      const branchName = branchObj ? branchObj.branch_name : (r.branch_name || 'MAIN');
+
+                      const isL1Pending = r.status === 'PENDING_L1' || r.status === 'PENDING';
+                      const isL2Pending = r.status === 'PENDING_L2';
+                      const isApproved = r.status === 'APPROVED';
+                      const isRejected = r.status === 'REJECTED';
+
+                      return (
+                        <tr key={r.request_id}>
+                          <td><strong>#{r.request_id}</strong></td>
+                          <td>
+                            <strong>{r.emp_name || r.emp_id}</strong>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'monospace' }}>{r.emp_id}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>🏢 {branchName}</div>
+                          </td>
+                          <td>
+                            <div><strong>{r.request_date}</strong></div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{r.shift_name || 'General Shift'}</div>
+                          </td>
+                          <td>
+                            <span style={{ padding: '2px 8px', borderRadius: 4, background: r.punch_type === 'Check-In' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: r.punch_type === 'Check-In' ? '#10b981' : '#f59e0b', fontSize: '0.75rem', fontWeight: 800 }}>
+                              {r.punch_type}
+                            </span>
+                            <div style={{ marginTop: 4, fontFamily: 'monospace', fontWeight: 700 }}>{r.requested_time}</div>
+                          </td>
+                          <td style={{ maxWidth: 180, fontSize: '0.85rem' }}>{r.remarks || '---'}</td>
+
+                          {/* APPROVER 01: RESPECTIVE MANAGER */}
+                          <td>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#38bdf8' }}>
+                              {r.approver_01_name || 'Respective Manager'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: {r.approver_01_emp_id || 'MGR-01'}</div>
+                            <div style={{ marginTop: 4 }}>
+                              {r.approver_01_status === 'APPROVED' ? (
+                                <span style={{ padding: '2px 6px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>✅ Approved L1</span>
+                              ) : r.approver_01_status === 'REJECTED' ? (
+                                <span style={{ padding: '2px 6px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>❌ Rejected L1</span>
+                              ) : (
+                                <span style={{ padding: '2px 6px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>⏳ Pending L1</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* APPROVER 02: SUPERIOR MANAGER */}
+                          <td>
+                            {r.approver_02_emp_id ? (
+                              <>
+                                <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#c084fc' }}>
+                                  {r.approver_02_name || 'Superior Manager'}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: {r.approver_02_emp_id}</div>
+                                <div style={{ marginTop: 4 }}>
+                                  {r.approver_02_status === 'APPROVED' ? (
+                                    <span style={{ padding: '2px 6px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>✅ Approved L2</span>
+                                  ) : r.approver_02_status === 'REJECTED' ? (
+                                    <span style={{ padding: '2px 6px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>❌ Rejected L2</span>
+                                  ) : isL2Pending ? (
+                                    <span style={{ padding: '2px 6px', background: 'rgba(192,132,252,0.2)', color: '#c084fc', borderRadius: 4, fontSize: '0.72rem', fontWeight: 800 }}>⏳ Pending L2</span>
+                                  ) : (
+                                    <span style={{ padding: '2px 6px', background: 'rgba(148,163,184,0.15)', color: '#94a3b8', borderRadius: 4, fontSize: '0.72rem' }}>🔒 Awaiting L1</span>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                Not Configured (Single Tier)
+                              </span>
+                            )}
+                          </td>
+
+                          {/* OVERALL WORKFLOW STATUS */}
+                          <td>
+                            {isApproved && (
+                              <span style={{ padding: '4px 10px', background: 'rgba(16,185,129,0.2)', color: '#10b981', borderRadius: 20, fontSize: '0.75rem', fontWeight: 800 }}>
+                                ✅ Approved
+                              </span>
+                            )}
+                            {isRejected && (
+                              <span style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 20, fontSize: '0.75rem', fontWeight: 800 }}>
+                                ❌ Rejected
+                              </span>
+                            )}
+                            {isL1Pending && (
+                              <span style={{ padding: '4px 10px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', borderRadius: 20, fontSize: '0.75rem', fontWeight: 800 }}>
+                                🟡 Pending L1 (Respective Mgr)
+                              </span>
+                            )}
+                            {isL2Pending && (
+                              <span style={{ padding: '4px 10px', background: 'rgba(192,132,252,0.2)', color: '#c084fc', borderRadius: 20, fontSize: '0.75rem', fontWeight: 800 }}>
+                                🟣 Pending L2 (Superior Mgr)
+                              </span>
+                            )}
+                          </td>
+
+                          {/* APPROVAL ACTIONS */}
+                          <td>
+                            {isL1Pending && (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={async () => {
+                                    await api.processRegularizationAction(r.request_id, 'APPROVE', 1);
+                                    await loadAllData();
+                                    alert(r.approver_02_emp_id ? '✅ Level 1 Approved! Request routed to Approver 02 (Superior Manager).' : '✅ Level 1 Approved! Attendance record regularized.');
+                                  }}
+                                  style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem' }}
+                                >
+                                  Approve (L1)
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    await api.processRegularizationAction(r.request_id, 'REJECT', 1);
+                                    await loadAllData();
+                                    alert('❌ Regularization Request Rejected by Level 1.');
+                                  }}
+                                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem' }}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+
+                            {isL2Pending && (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={async () => {
+                                    await api.processRegularizationAction(r.request_id, 'APPROVE', 2);
+                                    await loadAllData();
+                                    alert('✅ Final Approval by Superior Manager Completed! Attendance record regularized.');
+                                  }}
+                                  style={{ background: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem' }}
+                                >
+                                  Approve (L2 Superior)
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    await api.processRegularizationAction(r.request_id, 'REJECT', 2);
+                                    await loadAllData();
+                                    alert('❌ Regularization Request Rejected by Superior Manager.');
+                                  }}
+                                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: '0.75rem' }}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+
+                            {(isApproved || isRejected) && (
+                              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Completed</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {regularizationReqs.length === 0 && (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', color: '#94a3b8', padding: 24 }}>
+                          No regularization requests in queue.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

@@ -68,8 +68,8 @@ const STORAGE_KEYS = {
 // Initial Seed Data
 const initialSeed = {
   branches: [
-    { branch_id: 1, branch_name: 'Downtown HQ (#001)', location_code: 'HQ-001', address: '100 Financial Center Blvd', manager_name: 'Anita Roy', manager_phone: '+1 555-010-1002', is_active: true },
-    { branch_id: 2, branch_name: 'North Branch (#002)', location_code: 'NB-002', address: '45 Innovation Way', manager_name: 'David Miller', manager_phone: '+1 555-010-1003', is_active: true }
+    { branch_id: 1, branch_name: 'Downtown HQ (#001)', location_code: 'HQ-001', address: '100 Financial Center Blvd', respective_manager_id: 'EMP-1001', manager_name: 'Anita Roy', manager_phone: '+1 555-010-1002', superior_manager_id: 'EMP-1002', superior_manager_name: 'David Miller', superior_manager_phone: '+1 555-010-1003', is_active: true },
+    { branch_id: 2, branch_name: 'North Branch (#002)', location_code: 'NB-002', address: '45 Innovation Way', respective_manager_id: 'EMP-1003', manager_name: 'Sarah Connor', manager_phone: '+1 555-010-1003', superior_manager_id: 'EMP-1001', superior_manager_name: 'Anita Roy', superior_manager_phone: '+1 555-010-1002', is_active: true }
   ],
   shifts: [],
   employees: [],
@@ -380,15 +380,36 @@ export const api = {
   },
   saveBranch: async (branchData) => {
     const branches = api.getBranches();
+    const employees = getLocalData(STORAGE_KEYS.EMPLOYEES, initialSeed.employees);
+
+    // Auto-resolve manager names if employee IDs provided
+    let managerName = branchData.manager_name || '';
+    if (branchData.respective_manager_id) {
+      const mEmp = employees.find(e => e.emp_id === branchData.respective_manager_id);
+      if (mEmp) managerName = `${mEmp.first_name} ${mEmp.last_name}`;
+    }
+
+    let superiorName = branchData.superior_manager_name || '';
+    if (branchData.superior_manager_id) {
+      const sEmp = employees.find(e => e.emp_id === branchData.superior_manager_id);
+      if (sEmp) superiorName = `${sEmp.first_name} ${sEmp.last_name}`;
+    }
+
+    const payloadObj = {
+      ...branchData,
+      manager_name: managerName,
+      superior_manager_name: superiorName
+    };
+
     let updated;
     let target;
     if (branchData.branch_id) {
-      updated = branches.map(b => Number(b.branch_id) === Number(branchData.branch_id) ? { ...b, ...branchData, branch_id: Number(branchData.branch_id) } : b);
-      target = { ...branchData, branch_id: Number(branchData.branch_id) };
+      updated = branches.map(b => Number(b.branch_id) === Number(branchData.branch_id) ? { ...b, ...payloadObj, branch_id: Number(branchData.branch_id) } : b);
+      target = { ...payloadObj, branch_id: Number(branchData.branch_id) };
     } else {
       const maxId = branches.length > 0 ? Math.max(...branches.map(b => Number(b.branch_id) || 0)) : 0;
       const newId = maxId + 1;
-      target = { ...branchData, branch_id: newId, is_active: true };
+      target = { ...payloadObj, branch_id: newId, is_active: true };
       updated = [...branches, target];
     }
     setLocalData(STORAGE_KEYS.BRANCHES, updated);
@@ -399,7 +420,13 @@ export const api = {
           branch_id: Number(target.branch_id),
           branch_name: String(target.branch_name || ''),
           location_code: String(target.location_code || ''),
-          address: String(target.address || '')
+          address: String(target.address || ''),
+          respective_manager_id: target.respective_manager_id || null,
+          manager_name: String(target.manager_name || ''),
+          manager_phone: String(target.manager_phone || ''),
+          superior_manager_id: target.superior_manager_id || null,
+          superior_manager_name: String(target.superior_manager_name || ''),
+          superior_manager_phone: String(target.superior_manager_phone || '')
         };
 
         const { error } = await supabase.from('tbl_branches').upsert(dbPayload, { onConflict: 'branch_id' });
@@ -1005,21 +1032,57 @@ export const api = {
     const reqs = getLocalData(STORAGE_KEYS.REGULARIZATION, initialSeed.regularization);
     const employees = getLocalData(STORAGE_KEYS.EMPLOYEES, initialSeed.employees);
     const shifts = getLocalData(STORAGE_KEYS.SHIFTS, initialSeed.shifts);
+    const branches = api.getBranches();
+
     const emp = employees.find(e => e.emp_id === reqData.emp_id);
     const shift = shifts.find(s => s.shift_id === Number(reqData.shift_id));
+
+    // Dynamic Employee-to-Branch Mapping & Multi-Tier Approval Matrix
+    const empBranchId = emp ? (emp.branch_id ? Number(emp.branch_id) : 1) : 1;
+    const branch = branches.find(b => Number(b.branch_id) === empBranchId);
+
+    const approver1Id = branch ? (branch.respective_manager_id || branch.manager_id || 'MGR-01') : 'MGR-01';
+    let approver1Name = branch ? (branch.manager_name || 'Respective Manager') : 'Respective Manager';
+    if (approver1Id) {
+      const a1Emp = employees.find(e => e.emp_id === approver1Id);
+      if (a1Emp) approver1Name = `${a1Emp.first_name} ${a1Emp.last_name}`;
+    }
+
+    const approver2Id = branch ? (branch.superior_manager_id || null) : null;
+    let approver2Name = branch ? (branch.superior_manager_name || null) : null;
+    if (approver2Id) {
+      const a2Emp = employees.find(e => e.emp_id === approver2Id);
+      if (a2Emp) approver2Name = `${a2Emp.first_name} ${a2Emp.last_name}`;
+    }
 
     const newReq = {
       request_id: Date.now(),
       emp_id: reqData.emp_id,
       emp_name: emp ? `${emp.first_name} ${emp.last_name}` : reqData.emp_id,
+      branch_id: empBranchId,
+      branch_name: branch ? branch.branch_name : 'MAIN',
       request_date: reqData.request_date,
       shift_id: Number(reqData.shift_id),
       shift_name: shift ? shift.shift_name : 'Default Shift',
       punch_type: reqData.punch_type,
       requested_time: reqData.requested_time,
       remarks: reqData.remarks,
-      status: 'PENDING'
+
+      // Approval Matrix Configuration
+      approver_01_emp_id: approver1Id,
+      approver_01_name: approver1Name,
+      approver_01_status: 'PENDING',
+      approver_01_action_at: null,
+
+      approver_02_emp_id: approver2Id,
+      approver_02_name: approver2Name,
+      approver_02_status: approver2Id ? 'PENDING' : 'NOT_APPLICABLE',
+      approver_02_action_at: null,
+
+      current_approval_level: 1,
+      status: 'PENDING_L1' // PENDING_L1 | PENDING_L2 | APPROVED | REJECTED
     };
+
     const updated = [newReq, ...reqs];
     setLocalData(STORAGE_KEYS.REGULARIZATION, updated);
 
@@ -1027,47 +1090,115 @@ export const api = {
       let formattedTime = reqData.requested_time || '09:00';
       if (formattedTime.length === 5) formattedTime += ':00';
 
-      const { error } = await supabase.from('tbl_regularization_requests').insert({
-        emp_id: reqData.emp_id,
-        request_date: reqData.request_date,
-        shift_id: Number(reqData.shift_id),
-        punch_type: reqData.punch_type,
-        requested_time: formattedTime,
-        remarks: reqData.remarks || '',
-        status: 'PENDING'
-      });
-      if (error) {
-        console.error('Supabase submitRegularizationRequest error:', error);
-        throw new Error(error.message || 'Failed to submit regularization request in Supabase');
+      try {
+        const { error } = await supabase.from('tbl_regularization_requests').insert({
+          emp_id: reqData.emp_id,
+          branch_id: empBranchId,
+          request_date: reqData.request_date,
+          shift_id: Number(reqData.shift_id),
+          punch_type: reqData.punch_type,
+          requested_time: formattedTime,
+          remarks: reqData.remarks || '',
+          approver_01_emp_id: approver1Id,
+          approver_01_name: approver1Name,
+          approver_01_status: 'PENDING',
+          approver_02_emp_id: approver2Id,
+          approver_02_name: approver2Name,
+          approver_02_status: approver2Id ? 'PENDING' : 'NOT_APPLICABLE',
+          current_approval_level: 1,
+          status: 'PENDING_L1'
+        });
+        if (error) {
+          console.error('Supabase submitRegularizationRequest error:', error);
+        }
+      } catch (e) {
+        console.error('Supabase submitRegularizationRequest exception:', e);
       }
     }
     return newReq;
   },
-  updateRegularizationStatus: async (requestId, status) => {
+
+  // Multi-Tier Regularization Workflow Engine
+  processRegularizationAction: async (requestId, action, approverLevel = 1) => {
     const reqs = getLocalData(STORAGE_KEYS.REGULARIZATION, initialSeed.regularization);
     const target = reqs.find(r => r.request_id === requestId);
-    if (target && status === 'APPROVED') {
-      await api.directRegularize({
-        emp_id: target.emp_id,
-        date_stamp: target.request_date,
-        shift_id: target.shift_id,
-        action: 'PRESENT',
-        in_time: target.punch_type === 'Check-In' ? target.requested_time : '09:00 AM',
-        out_time: target.punch_type === 'Check-Out' ? target.requested_time : '06:00 PM',
-        remarks: `Approved Regularization Request #${requestId}`
-      });
-    }
-    const updated = reqs.map(r => r.request_id === requestId ? { ...r, status } : r);
-    setLocalData(STORAGE_KEYS.REGULARIZATION, updated);
+    if (!target) throw new Error('Regularization request not found');
 
-    if (isSupabaseConfigured()) {
-      const { error } = await supabase.from('tbl_regularization_requests').update({ status }).eq('request_id', requestId);
-      if (error) {
-        console.error('Supabase updateRegularizationStatus error:', error);
-        throw new Error(error.message || 'Failed to update regularization status in Supabase');
+    const nowIso = new Date().toISOString();
+    let updatedReq = { ...target };
+
+    if (action === 'REJECT') {
+      if (approverLevel === 1 || target.status === 'PENDING_L1') {
+        updatedReq.approver_01_status = 'REJECTED';
+        updatedReq.approver_01_action_at = nowIso;
+      } else {
+        updatedReq.approver_02_status = 'REJECTED';
+        updatedReq.approver_02_action_at = nowIso;
+      }
+      updatedReq.status = 'REJECTED';
+    } else if (action === 'APPROVE') {
+      if (approverLevel === 1 || target.status === 'PENDING_L1') {
+        updatedReq.approver_01_status = 'APPROVED';
+        updatedReq.approver_01_action_at = nowIso;
+
+        // Check if Approver 02 (Superior Manager) is configured
+        if (target.approver_02_emp_id && target.approver_02_emp_id.trim() !== '') {
+          updatedReq.current_approval_level = 2;
+          updatedReq.status = 'PENDING_L2'; // Route to Superior Manager!
+        } else {
+          // No Superior Manager configured -> Complete request!
+          updatedReq.status = 'APPROVED';
+          await api.directRegularize({
+            emp_id: target.emp_id,
+            date_stamp: target.request_date,
+            shift_id: target.shift_id,
+            action: 'PRESENT',
+            in_time: target.punch_type === 'Check-In' ? target.requested_time : '09:00 AM',
+            out_time: target.punch_type === 'Check-Out' ? target.requested_time : '06:00 PM',
+            remarks: `Approved by Respective Manager (${target.approver_01_name || 'Approver 01'}) - Req #${requestId}`
+          });
+        }
+      } else if (approverLevel === 2 || target.status === 'PENDING_L2') {
+        updatedReq.approver_02_status = 'APPROVED';
+        updatedReq.approver_02_action_at = nowIso;
+        updatedReq.status = 'APPROVED'; // Completed!
+
+        await api.directRegularize({
+          emp_id: target.emp_id,
+          date_stamp: target.request_date,
+          shift_id: target.shift_id,
+          action: 'PRESENT',
+          in_time: target.punch_type === 'Check-In' ? target.requested_time : '09:00 AM',
+          out_time: target.punch_type === 'Check-Out' ? target.requested_time : '06:00 PM',
+          remarks: `Fully Approved by Superior Manager (${target.approver_02_name || 'Approver 02'}) - Req #${requestId}`
+        });
       }
     }
-    return updated;
+
+    const updatedList = reqs.map(r => r.request_id === requestId ? updatedReq : r);
+    setLocalData(STORAGE_KEYS.REGULARIZATION, updatedList);
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('tbl_regularization_requests').update({
+          approver_01_status: updatedReq.approver_01_status,
+          approver_01_action_at: updatedReq.approver_01_action_at,
+          approver_02_status: updatedReq.approver_02_status,
+          approver_02_action_at: updatedReq.approver_02_action_at,
+          current_approval_level: updatedReq.current_approval_level,
+          status: updatedReq.status
+        }).eq('request_id', requestId);
+      } catch (e) {
+        console.error('Supabase processRegularizationAction error:', e);
+      }
+    }
+
+    return updatedList;
+  },
+
+  updateRegularizationStatus: async (requestId, status) => {
+    const action = status === 'APPROVED' ? 'APPROVE' : 'REJECT';
+    return await api.processRegularizationAction(requestId, action, 1);
   },
 
   // Email Schedules
