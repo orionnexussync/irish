@@ -422,13 +422,13 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
       empConfidences[bestCandidateId].reduce((a, b) => a + b, 0) / empConfidences[bestCandidateId].length
     );
 
-    // STRICT DUPLICATE CHECK-IN & UNCLOSED SHIFT CHECK-IN VALIDATION:
+    // STRICT CHECK-IN & CHECK-OUT VALIDATION (Date-Aware):
     const attendanceLogs = api.getAttendanceLogs();
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Find any unclosed (open) check-in session for this employee (check_out_time is null)
-    const openCheckIn = attendanceLogs.find(
-      a => a.emp_id === matchedEmp.emp_id && a.check_in_time && !a.check_out_time
+    // Find any open check-in session for this employee TODAY (check_out_time is null)
+    const todayOpenCheckIn = attendanceLogs.find(
+      a => a.emp_id === matchedEmp.emp_id && a.date_stamp === todayStr && a.check_in_time && !a.check_out_time
     );
 
     // Find any existing check-in for the same shift today
@@ -440,47 +440,12 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
     );
 
     if (type === 'CHECK_IN') {
-      if (openCheckIn) {
-        const openShiftObj = shifts.find(s => Number(s.shift_id) === Number(openCheckIn.shift_id));
-        const openShiftNameStr = openShiftObj
-          ? `${openShiftObj.shift_name} [${openShiftObj.start_time} - ${openShiftObj.end_time}]`
-          : 'PREVIOUS SHIFT';
-
-        if (Number(openCheckIn.shift_id) === Number(activeShiftId)) {
-          // Rule 2: Same shift duplicate check-in
-          const alertMsg = `YOU ALREADY CHECKIN SHIFT (${openShiftNameStr})`;
-          setScanningStatus('Already Checked In');
-          setMatchConfidence(avgConfidence);
-          setScanFeedback({
-            type: 'error',
-            text: alertMsg
-          });
-          audioService.speak(alertMsg);
-          audioService.playBeep('error');
-          return;
-        } else {
-          // Rule 1: Unclosed previous shift check-in (Regularization Required)
-          const alertMsg = `ATTENDANCE REGULARIZATION IS REQUIRED FOR PREVIOUS SHIFT ${openShiftNameStr}.`;
-          setScanningStatus('Regularization Required');
-          setMatchConfidence(avgConfidence);
-          setScanFeedback({
-            type: 'error',
-            text: alertMsg
-          });
-          audioService.speak(alertMsg);
-          audioService.playBeep('error');
-          return;
-        }
-      }
-
-      if (sameShiftCheckIn) {
-        // Rule 2: Sequential duplicate check-in for same shift
+      if (todayOpenCheckIn && Number(todayOpenCheckIn.shift_id) === Number(activeShiftId)) {
         const targetShiftObj = shifts.find(s => Number(s.shift_id) === Number(activeShiftId));
         const targetShiftNameStr = targetShiftObj
           ? `${targetShiftObj.shift_name} [${targetShiftObj.start_time} - ${targetShiftObj.end_time}]`
-          : 'SHIFT';
-        const alertMsg = `YOU ALREADY CHECKIN SHIFT (${targetShiftNameStr})`;
-
+          : 'THIS SHIFT';
+        const alertMsg = `YOU ALREADY CHECKED IN (${targetShiftNameStr})`;
         setScanningStatus('Already Checked In');
         setMatchConfidence(avgConfidence);
         setScanFeedback({
@@ -493,16 +458,18 @@ export function KioskApp({ selectedBranchId, onBranchChange, onCompanyLogout }) 
       }
     }
 
-    if (type === 'CHECK_OUT' && !openCheckIn && !sameShiftCheckIn) {
-      setScanningStatus('Check-Out Denied');
-      setMatchConfidence(avgConfidence);
-      setScanFeedback({
-        type: 'error',
-        text: `Check-Out Denied for ${matchedEmp.first_name} ${matchedEmp.last_name}: No active Check-In found for this shift today. Only the person who Checked In can Check Out!`
-      });
-      audioService.speak(`Check-Out Denied. ${matchedEmp.first_name} has no active check in for this shift.`);
-      audioService.playBeep('error');
-      return;
+    if (type === 'CHECK_OUT') {
+      if (!todayOpenCheckIn && !sameShiftCheckIn) {
+        setScanningStatus('Check-Out Denied');
+        setMatchConfidence(avgConfidence);
+        setScanFeedback({
+          type: 'error',
+          text: `Check-Out Denied for ${matchedEmp.first_name} ${matchedEmp.last_name}: No active Check-In found for today. Only employees who Checked In can Check Out!`
+        });
+        audioService.speak(`Check-Out Denied. ${matchedEmp.first_name} has no active check in for today.`);
+        audioService.playBeep('error');
+        return;
+      }
     }
 
     const activeShift = shifts.find(s => s.shift_id === Number(activeShiftId));

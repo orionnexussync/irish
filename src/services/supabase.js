@@ -223,22 +223,34 @@ export async function syncFromSupabase() {
     }
 
     // Employees Sync
-    if (eRes.data) {
-      setLocalData(STORAGE_KEYS.EMPLOYEES, eRes.data);
+    if (eRes.data && eRes.data.length > 0) {
+      const localEmps = getLocalData(STORAGE_KEYS.EMPLOYEES, []);
+      // Preserve local face embeddings if remote doesn't have them
+      const mergedEmps = eRes.data.map(remoteEmp => {
+        const localMatch = localEmps.find(l => l.emp_id === remoteEmp.emp_id);
+        return {
+          ...remoteEmp,
+          face_embedding: remoteEmp.face_embedding || (localMatch ? localMatch.face_embedding : null)
+        };
+      });
+      setLocalData(STORAGE_KEYS.EMPLOYEES, mergedEmps);
     } else if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) {
       setLocalData(STORAGE_KEYS.EMPLOYEES, []);
     }
 
     // Attendance Logs Sync
-    if (aRes.data) {
-      setLocalData(STORAGE_KEYS.ATTENDANCE, aRes.data);
+    if (aRes.data && aRes.data.length > 0) {
+      const localAtt = getLocalData(STORAGE_KEYS.ATTENDANCE, []);
+      const remoteIds = new Set(aRes.data.map(a => `${a.emp_id}_${a.check_in_time}`));
+      const offlineOnly = localAtt.filter(l => !remoteIds.has(`${l.emp_id}_${l.check_in_time}`));
+      setLocalData(STORAGE_KEYS.ATTENDANCE, [...aRes.data, ...offlineOnly]);
       deduplicateAttendanceLogs();
     } else if (!localStorage.getItem(STORAGE_KEYS.ATTENDANCE)) {
       setLocalData(STORAGE_KEYS.ATTENDANCE, []);
     }
 
     // Leave Entries Sync
-    if (lRes.data) {
+    if (lRes.data && lRes.data.length > 0) {
       setLocalData(STORAGE_KEYS.LEAVES, lRes.data);
     } else if (!localStorage.getItem(STORAGE_KEYS.LEAVES)) {
       setLocalData(STORAGE_KEYS.LEAVES, []);
@@ -252,7 +264,7 @@ export async function syncFromSupabase() {
     }
 
     // SOS Logs Sync
-    if (sosRes.data) {
+    if (sosRes.data && sosRes.data.length > 0) {
       setLocalData(STORAGE_KEYS.SOS_LOGS, sosRes.data);
     } else if (!localStorage.getItem(STORAGE_KEYS.SOS_LOGS)) {
       setLocalData(STORAGE_KEYS.SOS_LOGS, []);
@@ -265,9 +277,12 @@ export async function syncFromSupabase() {
       setLocalData(STORAGE_KEYS.EMAIL_SCHEDULES, initialSeed.email_schedules);
     }
 
-    // Regularization Requests Sync
-    if (rRes.data) {
-      setLocalData(STORAGE_KEYS.REGULARIZATION, rRes.data);
+    // Regularization Requests Sync (Merge remote and local so newly submitted requests are never lost)
+    if (rRes.data && rRes.data.length > 0) {
+      const localReqs = getLocalData(STORAGE_KEYS.REGULARIZATION, []);
+      const remoteReqIds = new Set(rRes.data.map(r => r.request_id || `${r.emp_id}_${r.request_date}_${r.punch_type}`));
+      const pendingLocal = localReqs.filter(l => !remoteReqIds.has(l.request_id) && !remoteReqIds.has(`${l.emp_id}_${l.request_date}_${l.punch_type}`));
+      setLocalData(STORAGE_KEYS.REGULARIZATION, [...rRes.data, ...pendingLocal]);
     } else if (!localStorage.getItem(STORAGE_KEYS.REGULARIZATION)) {
       setLocalData(STORAGE_KEYS.REGULARIZATION, []);
     }
@@ -740,45 +755,36 @@ export const api = {
 
     const dateStamp = new Date(timestamp || Date.now()).toISOString().split('T')[0];
 
-    // Find any un-closed (open) check-in session for this employee
-    const openIndex = attendance.findIndex(
-      a => a.emp_id === emp_id && a.check_in_time && !a.check_out_time
+    // Find any open check-in session for TODAY
+    const todayOpenIndex = attendance.findIndex(
+      a => a.emp_id === emp_id && a.date_stamp === dateStamp && a.check_in_time && !a.check_out_time
     );
 
-    let updated;
+    let updated = [...attendance];
+
     if (punch_type === 'CHECK_IN') {
       const shifts = api.getShifts();
-      const openCheckIn = attendance.find(
-        a => a.emp_id === emp_id && a.check_in_time && !a.check_out_time
-      );
 
-      if (openCheckIn) {
-        const openShiftObj = shifts.find(s => Number(s.shift_id) === Number(openCheckIn.shift_id));
-        const openShiftNameStr = openShiftObj
-          ? `${openShiftObj.shift_name} [${openShiftObj.start_time} - ${openShiftObj.end_time}]`
-          : 'PREVIOUS SHIFT';
-
-        if (Number(openCheckIn.shift_id) === Number(shift_id || 1)) {
-          throw new Error(`YOU ALREADY CHECKIN SHIFT (${openShiftNameStr})`);
+      // Check if ALREADY checked in for the SAME shift today without checkout
+      if (todayOpenIndex >= 0) {
+        const openLog = updated[todayOpenIndex];
+        if (Number(openLog.shift_id) === Number(shift_id || 1)) {
+          const shiftObj = shifts.find(s => Number(s.shift_id) === Number(shift_id || 1));
+          const shiftName = shiftObj ? `${shiftObj.shift_name} [${shiftObj.start_time} - ${shiftObj.end_time}]` : 'this shift';
+          throw new Error(`YOU ALREADY CHECKIN SHIFT (${shiftName})`);
         } else {
-          throw new Error(`ATTENDANCE REGULARIZATION IS REQUIRED FOR PREVIOUS SHIFT ${openShiftNameStr}.`);
+          // Auto-close earlier shift today so employee can check into new shift
+          updated[todayOpenIndex].check_out_time = new Date(timestamp || Date.now()).toISOString();
         }
       }
 
-      const sameShiftCheckIn = attendance.find(
-        a => a.emp_id === emp_id &&
-             a.date_stamp === dateStamp &&
-             Number(a.shift_id) === Number(shift_id || 1) &&
-             a.check_in_time
-      );
-
-      if (sameShiftCheckIn) {
-        const targetShiftObj = shifts.find(s => Number(s.shift_id) === Number(shift_id || 1));
-        const targetShiftNameStr = targetShiftObj
-          ? `${targetShiftObj.shift_name} [${targetShiftObj.start_time} - ${targetShiftObj.end_time}]`
-          : 'SHIFT';
-        throw new Error(`YOU ALREADY CHECKIN SHIFT (${targetShiftNameStr})`);
-      }
+      // Auto-close any stale unclosed logs from past dates so they never block today's check-ins
+      updated = updated.map(a => {
+        if (a.emp_id === emp_id && a.date_stamp < dateStamp && a.check_in_time && !a.check_out_time) {
+          return { ...a, check_out_time: a.check_in_time };
+        }
+        return a;
+      });
 
       const checkInIso = new Date(timestamp || Date.now()).toISOString();
       const newLog = {
@@ -795,7 +801,7 @@ export const api = {
         remarks: 'Biometric Face Verified Punch In'
       };
 
-      updated = [newLog, ...attendance];
+      updated = [newLog, ...updated];
       setLocalData(STORAGE_KEYS.ATTENDANCE, updated);
 
       if (isSupabaseConfigured()) {
@@ -815,18 +821,19 @@ export const api = {
       }
       return { log: newLog, status: 'CHECKED_IN', emp };
     } else {
-      // CHECK_OUT
-      let targetIndex = openIndex;
+      // CHECK_OUT: Look for active check-in session for TODAY
+      let targetIndex = todayOpenIndex;
       if (targetIndex < 0) {
-        targetIndex = attendance.findIndex(
-          a => a.emp_id === emp_id && a.date_stamp === dateStamp && Number(a.shift_id) === Number(shift_id)
+        // Fallback check for any open log created today
+        targetIndex = updated.findIndex(
+          a => a.emp_id === emp_id && a.date_stamp === dateStamp && a.check_in_time && !a.check_out_time
         );
       }
-      if (targetIndex < 0 || !attendance[targetIndex].check_in_time) {
-        throw new Error('No open Check-In session found. Please Check-In first before Checking-Out.');
+
+      if (targetIndex < 0 || !updated[targetIndex] || !updated[targetIndex].check_in_time) {
+        throw new Error(`Check-Out Denied: ${emp.first_name} has no active Check-In found for today. Please Check-In first before Checking-Out.`);
       }
 
-      updated = [...attendance];
       const checkOutIso = new Date(timestamp || Date.now()).toISOString();
       updated[targetIndex].check_out_time = checkOutIso;
       setLocalData(STORAGE_KEYS.ATTENDANCE, updated);
