@@ -1,16 +1,54 @@
 // Human Voiceover Audio & Sound Feedback Service for Kiosk & Mobile APK System
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 class AudioService {
   constructor() {
     this.synth = typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null;
     this.speechEnabled = true;
     this.cachedVoices = [];
+    this.isNative = false;
+    this.unlocked = false;
+
+    // Detect Capacitor Native environment
+    if (typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+      this.isNative = window.Capacitor.isNativePlatform();
+    }
 
     if (this.synth) {
       this.loadVoices();
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
       }
+    }
+
+    // Auto-unlock audio and speech on first user gesture
+    if (typeof window !== 'undefined') {
+      const unlockHandler = () => {
+        this.unlockAudio();
+        window.removeEventListener('click', unlockHandler);
+        window.removeEventListener('touchstart', unlockHandler);
+      };
+      window.addEventListener('click', unlockHandler, { passive: true });
+      window.addEventListener('touchstart', unlockHandler, { passive: true });
+    }
+  }
+
+  unlockAudio() {
+    if (this.unlocked) return;
+    try {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        const audioCtx = new AudioCtxClass();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+      if (this.synth && this.synth.paused) {
+        this.synth.resume();
+      }
+      this.unlocked = true;
+    } catch (e) {
+      console.warn('Audio unlock error:', e);
     }
   }
 
@@ -43,30 +81,50 @@ class AudioService {
     return voices[0] || null;
   }
 
-  speak(text, options = {}) {
+  async speak(text, options = {}) {
     if (!text || !this.speechEnabled) return;
 
+    const rate = options.rate || 0.95;
+    const pitch = options.pitch || 1.0;
+    const volume = options.volume || 1.0;
+
+    // 1. Native Mobile APK TTS (Android / iOS via Capacitor Native TextToSpeech Engine)
+    if (this.isNative) {
+      try {
+        await TextToSpeech.stop();
+        await TextToSpeech.speak({
+          text: text,
+          lang: 'en-US',
+          rate: rate,
+          pitch: pitch,
+          volume: volume,
+          category: 'ambient',
+        });
+        return;
+      } catch (nativeErr) {
+        console.warn('Native TextToSpeech failed, falling back to web synthesis:', nativeErr);
+      }
+    }
+
+    // 2. Browser Web Speech Synthesis Fallback
     if (!this.synth) {
       console.warn('Speech synthesis not available in this environment');
       return;
     }
 
     try {
-      // Resume synthesis if paused (common Chrome/Android issue)
       if (this.synth.paused) {
         this.synth.resume();
       }
 
-      // Cancel previous utterances to avoid queue backlog
       this.synth.cancel();
 
-      // Create new utterance with small delay to let cancel settle
       setTimeout(() => {
         try {
           const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = options.rate || 0.95; // slightly relaxed for natural human cadence
-          utterance.pitch = options.pitch || 1.0;
-          utterance.volume = options.volume || 1.0;
+          utterance.rate = rate;
+          utterance.pitch = pitch;
+          utterance.volume = volume;
 
           const voice = this.getBestVoice();
           if (voice) {
@@ -79,7 +137,7 @@ class AudioService {
         }
       }, 60);
     } catch (e) {
-      console.warn('Speech synthesis error:', e);
+      console.warn('Web speech synthesis error:', e);
     }
   }
 
